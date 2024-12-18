@@ -26,9 +26,9 @@ from model_utils import cached_generate
 from model_utils import GPT_COSTS
 from model_utils import load_cache_file
 import pandas as pd
-from Planning.scripts.backtrace_utils import make_all_consistent_states
-from Planning.scripts.make_heldout_states import make_constraints
-from Planning.scripts.make_heldout_states import make_impossible_and_contradicting_facts
+from Planning.backtrace_utils import make_all_consistent_states
+from Planning.make_heldout_states import make_constraints
+from Planning.make_heldout_states import make_impossible_and_contradicting_facts
 from pyperplan import grounding
 from pyperplan.pddl.parser import Parser
 from pyperplan.task import Task

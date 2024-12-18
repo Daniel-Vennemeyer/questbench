@@ -20,14 +20,11 @@ import json
 import random
 import re
 
+from model_utils import cached_generate
+from model_utils import GPT_COSTS
+from model_utils import load_cache_file
 import pandas as pd
 import tqdm
-
-from .. import model_utils
-
-load_cache_file = model_utils.load_cache_file
-GPT_COSTS = model_utils.GPT_COSTS
-cached_generate = model_utils.cached_generate
 
 
 class SimpleLogicEvaluator:

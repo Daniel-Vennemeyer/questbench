@@ -17,7 +17,7 @@
 """
 
 import itertools as it
-from Planning.scripts.backtrace_utils import (
+from Planning.backtrace_utils import (
     make_all_consistent_states,
 )
 from pyperplan.search.breadth_first_search import breadth_first_search

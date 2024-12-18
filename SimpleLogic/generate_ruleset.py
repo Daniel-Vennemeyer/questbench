@@ -19,13 +19,13 @@ import argparse
 import glob
 import json
 
-from questbench.SimpleLogic import derivation
-from questbench.SimpleLogic import holdout_utils
-from questbench.SimpleLogic import ruleset
+from SimpleLogic import derivation
+from SimpleLogic import holdout_utils
+from SimpleLogic import ruleset
 
 
 def main(arguments) -> None:
-  rules_dicts, files_to_rules_dicts = ruleset.load_data()
+  rules_dicts, files_to_rules_dicts = ruleset.load_data(arguments.sl_dir)
   start_idx = int(arguments.start_idx)
   end_idx = int(arguments.end_idx)
   for item_file in files_to_rules_dicts:
@@ -111,6 +111,7 @@ def main(arguments) -> None:
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
+  parser.add_argument("--sl_dir", type=str, default="data/Logic-Q/SL_RP/RP/RP")
   parser.add_argument("--start_idx", type=int, default=0)
   parser.add_argument("--end_idx", type=int)
   args = parser.parse_args()

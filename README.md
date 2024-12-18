@@ -10,6 +10,15 @@ conda activate questbench
 pip install -r requirements.txt
 ```
 
+## Download datasets
+The datasets are publicly available at
+[TODO](TODO).
+
+After downloading, expand the Logic-Q rulesets
+```bash
+tar -xvf data/Logic-Q/SL_RP/RP/RP.tar.gz
+```
+
 
 ## Generate datasets
 Before running any code, be sure to run
@@ -18,26 +27,43 @@ export PYTHONPATH=.
 ```
 
 ### Logic-Q
+Generate 1-sufficient rulesets
 ```bash
 python SimpleLogic/generate_ruleset.py \
+      --sl_dir <sl_rules_dir> \
       --start_idx <start_idx> \
       --end_idx <end_idx>
 ```
 
-Run remaining commands in under "Make data" header in
+Make Logic-Q data from 1-sufficient rulesets
 ```
-SimpleLogic/make_data.ipynb
+python SimpleLogic/make_data.py \
+      --sl_dir <sl_rules_dir> \
+      --max_problems_to_sample_per_ruleset <max_problems_to_sample_per_ruleset>
 ```
 
 ### Planning-Q
+Generate 1-sufficient CSPs
 ```bash
-python Planning/scripts/make_planning_data.py
+python Planning/make_planning_data.py \
+      --pddl_dir <pddl_dir> \
+      --output_dir <output_dir>
 ```
 
 Run remaining commands in under "Make data" header in
+Make Planning-Q data from 1-sufficient CSPs
 ```
-pyperplan/make_data.ipynb
+python Planning/make_data.py \
+      --input_dir <input_dir> \
+      --output_dir <output_dir>
 ```
+where `input_dir` is the `output_dir` from the previous command.
+
+
+### GSM-Q
+GSM-Q was created through human annotation. To find the original data, see
+[TODO](TODO).
+
 
 ## Run experiments
 Set your api key to be able to use Gemini models
@@ -82,14 +108,10 @@ datasets/gsm_verbal_heldout_pilot.csv
 
 ## Citing this work
 
-Add citation details here, usually a pastable BibTeX snippet:
+Coming soon.
 
 ```latex
-@article{publicationname,
-      title={Publication Name},
-      author={Author One and Author Two and Author Three},
-      year={2024},
-}
+Coming soon.
 ```
 
 ## License and disclaimer

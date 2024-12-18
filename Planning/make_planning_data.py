@@ -16,19 +16,21 @@
 """Make data for Planning-Q.
 """
 
+import argparse
 import glob
 import itertools as it
 import logging
+import os
 import random
 import re
 import time
 
 import pandas as pd
-from Planning.scripts.backtrace_utils import backwards_bfs
-from Planning.scripts.make_heldout_states import check_questions
-from Planning.scripts.make_heldout_states import make_constraints
-from Planning.scripts.make_heldout_states import make_heldout_states
-from Planning.scripts.make_heldout_states import make_impossible_and_contradicting_facts
+from Planning.backtrace_utils import backwards_bfs
+from Planning.make_heldout_states import check_questions
+from Planning.make_heldout_states import make_constraints
+from Planning.make_heldout_states import make_heldout_states
+from Planning.make_heldout_states import make_impossible_and_contradicting_facts
 from pyperplan import grounding
 from pyperplan.pddl.parser import Parser
 
@@ -86,15 +88,15 @@ def _ground(
 NUMBER = re.compile(r"\d+")
 
 
-def main() -> None:
-  domain_file = "data/Planning/blocks/domain.pddl"
+def main(parsed_args) -> None:
+  domain_file = os.path.join(parsed_args.pddl_dir, "domain.pddl")
   with open(domain_file) as f:
     domain_pddl = f.read()
 
   print(domain_pddl)
   num_objs_to_problem_spec = {}
   for problem_file in glob.glob(
-      "data/Planning/blocks/task*.pddl"
+      os.path.join(parsed_args.pddl_dir, "task*.pddl")
   ):
     problem = _parse(domain_file, problem_file)
     task = _ground(problem)  # specific instance
@@ -324,6 +326,22 @@ def main() -> None:
               end_time - start_time,
           ]
 
+      os.makedirs(args.output_dir, exist_ok=True)
+      with open(f"{args.output_dir}/{num_obj}blocks_{g}goal.csv", "w") as wf:
+        data.to_csv(wf, index=False)
+
 
 if __name__ == "__main__":
-  main()
+  argparser = argparse.ArgumentParser()
+  argparser.add_argument(
+      "--pddl_dir",
+      default="data/Planning-Q/task_pddls/blocks",
+      help="Directory containing PDDLs",
+  )
+  argparser.add_argument(
+      "--output_dir",
+      default="data/Planning-Q/heldout_data",
+      help="Directory to write data to",
+  )
+  args = argparser.parse_args()
+  main(args)

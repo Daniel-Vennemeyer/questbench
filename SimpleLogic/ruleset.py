@@ -23,14 +23,17 @@ from typing import Dict, FrozenSet, List
 import tqdm
 
 
-def load_data():
+def load_data(sl_dir: str):
   """Load data from CNS.
+
+  Args:
+    sl_dir: str path to directory containing SimpleLogic rulesets
 
   Returns:
   """
   rulesets = []
   files_to_rulesets = {}
-  for item_file in tqdm.tqdm(glob.glob("SimpleLogic/RP/RP/*.txt")):
+  for item_file in tqdm.tqdm(glob.glob(f"{sl_dir}/*.txt")):
     files_to_rulesets[item_file] = []
     with open(item_file, "r") as f:
       for line in f:

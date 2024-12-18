@@ -15,6 +15,7 @@
 
 """Utilities for generating ambiguous questions by holding out 1 word."""
 
+import copy
 import itertools as it
 import json
 
@@ -126,3 +127,46 @@ def make_heldout_ruleset(rules_dict):
       json.dumps(list(heldout_set)): list(heldout_set_to_subset_qs[heldout_set])
       for heldout_set in heldout_set_to_subset_qs
   }
+
+
+def get_all_inferrable_facts(rule_tree, true_facts, false_facts):
+  """Get all facts that can be inferred from the given true and false facts.
+
+  Args:
+    rule_tree: RuleTree
+    true_facts: Set[str]
+    false_facts: Set[str]
+
+  Returns:
+    Set[str]
+  """
+  # ASSUMES FALSE_FACTS ALREADY IN FORM "not _"
+  rules_to_consider = copy.deepcopy(rule_tree.nodes)
+
+  all_facts = set(true_facts).union(set(false_facts))
+
+  curr_facts = all_facts
+  while curr_facts:
+    new_facts = set()
+    for fact in curr_facts:
+      if ruleset.negate(fact) not in rules_to_consider:
+        continue
+      for rule in rules_to_consider[ruleset.negate(fact)].rules:
+        # find any facts that must be true, due to negate(fact) being false
+        remaining_terms = set(rule)
+        rule_true = False
+        for term in rule:
+          if term in all_facts:
+            # this rule is true by this term
+            rule_true = True
+            break
+          if ruleset.negate(term) in all_facts:
+            # other terms must be true
+            remaining_terms.remove(term)
+        if rule_true:
+          continue
+        if len(remaining_terms) == 1:
+          new_facts.add(remaining_terms.pop())
+    curr_facts = new_facts
+    all_facts = all_facts.union(curr_facts)
+  return all_facts
