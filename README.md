@@ -3,10 +3,17 @@
 Data and code for generating QuestBench data and evaluating LLMs on it.
 
 ## Installation
+Begin by creating a conda environment to contain the packages needed for
+QuestBench. You can install anaconda here: https://docs.anaconda.com/miniconda/install/#quick-command-line-install
 
 ```bash
 conda create -n questbench PYTHON=3.11
 conda activate questbench
+```
+
+Install PyTorch following the instructions here: https://pytorch.org/get-started/locally/
+
+```bash
 pip install -r requirements.txt
 ```
 
@@ -86,23 +93,24 @@ export OPENAI_PROJECT=<openai_project_key>
 Next, run the eval
 ```bash
 python mc_eval.py \
-      --model_name [gemini_mpp_32k|gemini_flash_s_32k|gpt-4o|o1-preview|gemma-27b|gemma-2b|gemma-9b] \
+      --model_name [gemini_pro|gemini_flash|gpt-4o|o1-preview|gemma-27b|gemma-2b|gemma-9b] \
       --domain_name [GSM_csp|plan|SL|GSM_verbal] \
       --eval_mode [mc|isambig|fullinfo] \
+      --data_dir <data_dir> \
       --data_file <data_fp> \
       --prompt_mode [|cot|fs4]
 ```
 
-Data file paths:
-datasets/gsm_csp_heldout_570.csv
-datasets/simplelogic_heldout_1k_o1_subsample.csv
-datasets/simplelogic_heldout_1k.csv
-datasets/planning_heldout_7500.csv
-datasets/planning_heldout_7500_o1_subsample.csv
+By default, `--data_dir` is set to `data/` and `--data_file` is set to the
+appropriate file for the domain.
+If you downloaded the datasets from the public website, the data files are in
+```bash
+data/Logic-Q/simplelogic_heldout_1k.csv
+data/Planning-Q/planning_heldout_7500.csv
+data/GSM-Q/gsm_CSP_heldout_pilot.csv
+data/GSM-Q/gsm_verbal_heldout_pilot.csv
+```
 
-New GSM datasets
-datasets/gsm_CSP_heldout_pilot.csv
-datasets/gsm_verbal_heldout_pilot.csv
 
 
 

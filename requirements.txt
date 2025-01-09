@@ -2,10 +2,8 @@ vertexai
 pyperplan
 pandas
 tqdm
-glob
 argparse
 tenacity
 transformers
-torch
 google-generativeai
 huggingface-hub
