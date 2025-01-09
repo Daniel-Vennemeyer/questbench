@@ -32,13 +32,17 @@ wait_random_exponential = tenacity.wait_random_exponential
 stop_after_attempt = tenacity.stop_after_attempt
 
 
-genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
-OPENAI_HEADER = {
-    "Content-Type": "application/json",
-    "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}",
-    "OpenAI-Organization": os.environ["OPENAI_ORGANIZATION"],
-    "OpenAI-Project": os.environ["OPENAI_PROJECT"],
-}
+if "GOOGLE_API_KEY" in os.environ:
+  genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
+
+OPENAI_HEADER = {}
+if "OPENAI_API_KEY" in os.environ:
+  OPENAI_HEADER = {
+      "Content-Type": "application/json",
+      "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}",
+      "OpenAI-Organization": os.environ["OPENAI_ORGANIZATION"],
+      "OpenAI-Project": os.environ["OPENAI_PROJECT"],
+  }
 
 
 GPT_COSTS = {

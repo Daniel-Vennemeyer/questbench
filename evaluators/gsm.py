@@ -67,9 +67,9 @@ class GSMEvaluator:
         "temperature": 0.0,
         "max_completion_tokens": 512,
     }
-    if self.model_name == "gemini_mpp_32k":
+    if self.model_name == "gemini_pro":
       self.model_url = "gemini-1.5-pro"
-    elif self.model_name == "gemini_flash_s_32k":
+    elif self.model_name == "gemini_flash":
       self.model_url = "gemini-1.5-flash"
     elif self.model_name == "gemma_2b":
       self.model_url = "google/gemma-2-2b-it"
@@ -202,6 +202,7 @@ Possible questions:
         if n_loops > 5:
           break
       try:
+        response = re.findall(r"\b[0-9]+\b", response)[0]
         correct = int(response) == gt_query
       except ValueError:
         correct = False
@@ -246,6 +247,7 @@ Possible questions:
         correct = gt_query == "Not sure"
       else:
         try:
+          response = re.findall(r"\b[0-9]+\b", response)[0]
           correct = int(response) == gt_query
         except ValueError:
           correct = False
@@ -324,8 +326,6 @@ Possible questions:
         questions.append(f"{len(questions)}. No questions needed.")
         intent = datum["Full Problem"]
         answer = datum["Full Answer"]
-        if not q_to_ask.isna():
-          continue
 
         if len(batch_requests[-1]) >= batch_size:
           batch_ids.append([])
@@ -399,8 +399,6 @@ Possible questions:
         request = datum["Rewritten Problem"]
         q_to_ask = datum["GT Question"]
         variables = json.loads(datum["Variables"])
-        if not q_to_ask.isna():
-          continue
 
         questions = []
         q_to_ask_index = -1
@@ -509,7 +507,6 @@ Possible questions:
     pbar = tqdm.tqdm(
         zip(
             batch_ids,
-            batch_intents,
             batch_requests,
             batch_gt_answers,
             batch_gt_queries,

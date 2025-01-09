@@ -85,11 +85,11 @@ def main(user_args) -> None:
         user_args.model_name,
         domain_file=os.path.join(
             user_args.data_dir,
-            "Planning-Q/Planning/blocks/domain.pddl",
+            "Planning-Q/task_pddls/blocks/domain.pddl",
         ),
         task_file_pattern=os.path.join(
             user_args.data_dir,
-            "Planning-Q/Planning/blocks/task*.pddl",
+            "Planning-Q/task_pddls/blocks/task*.pddl",
         ),
         cache_file=cache_file,
         use_cot=use_cot,
@@ -115,8 +115,8 @@ def main(user_args) -> None:
 
   print("Starting Evaluation")
   results = evaluator.evaluate_data(data, prompt_data)
-  os.makedirs("results", exist_ok=True)
-  output_fn = f"results/{user_args.model_name}_{user_args.domain_name}_{user_args.eval_mode}{file_suffix}.csv"
+  os.makedirs(user_args.results_dir, exist_ok=True)
+  output_fn = f"{user_args.results_dir}/{user_args.model_name}_{user_args.domain_name}_{user_args.eval_mode}{file_suffix}.csv"
   with open(output_fn, "w") as wf:
     results.to_csv(wf)
   print(f"Wrote to {output_fn}")
@@ -129,8 +129,8 @@ if __name__ == "__main__":
       type=str,
       choices=[
           "gpt-4o",
-          "gemini_flash_s_32k",
-          "gemini_mpp_32k",
+          "gemini_flash",
+          "gemini_pro",
           "gemma_2b",
           "gemma_27b",
           "gemma_9b",
@@ -173,6 +173,12 @@ if __name__ == "__main__":
       choices=["", "cot", "fs4"],
       default="",
       help="Use vanilla, CoT, or fewshot prompting (with 4 samples)",
+  )
+  parser.add_argument(
+      "--results_dir",
+      type=str,
+      default="results",
+      help="Directory to write results to",
   )
   args = parser.parse_args()
   main(args)

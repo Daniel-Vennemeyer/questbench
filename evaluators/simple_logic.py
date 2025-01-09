@@ -76,9 +76,9 @@ class SimpleLogicEvaluator:
         "temperature": 0.0,
         "max_completion_tokens": 512,
     }
-    if self.model_name == "gemini_mpp_32k":
+    if self.model_name == "gemini_pro":
       self.model_url = "gemini-1.5-pro"
-    elif self.model_name == "gemini_flash_s_32k":
+    elif self.model_name == "gemini_flash":
       self.model_url = "gemini-1.5-flash"
     elif self.model_name == "gemma_2b":
       self.model_url = "google/gemma-2-2b-it"
