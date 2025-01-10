@@ -98,17 +98,18 @@ python mc_eval.py \
       --eval_mode [mc|isambig|fullinfo] \
       --data_dir <data_dir> \
       --data_file <data_fp> \
-      --prompt_mode [|cot|fs4]
+      --prompt_mode [|cot|fs4] \
+      --results_dir <results_dir>
 ```
 
 By default, `--data_dir` is set to `data/` and `--data_file` is set to the
 appropriate file for the domain.
 If you downloaded the datasets from the public website, the data files are in
 ```bash
-data/Logic-Q/simplelogic_heldout_1k.csv
-data/Planning-Q/planning_heldout_7500.csv
-data/GSM-Q/gsm_CSP_heldout_pilot.csv
-data/GSM-Q/gsm_verbal_heldout_pilot.csv
+questbench_data/Logic-Q/simplelogic_heldout_1k.csv
+questbench_data/Planning-Q/planning_heldout_7500.csv
+questbench_data/GSM-Q/gsm_CSP_heldout_pilot.csv
+questbench_data/GSM-Q/gsm_verbal_heldout_pilot.csv
 ```
 
 

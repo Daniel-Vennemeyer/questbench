@@ -126,8 +126,9 @@ def model_call_wrapper(
       for message in messages:
         if message["role"] == "system":
           message["role"] = "user"
-        message["parts"] = message["content"]
-        del message["content"]
+        if "content" in message:
+          message["parts"] = message["content"]
+          del message["content"]
       chat = model.start_chat(history=messages[:-1])
       response = chat.send_message(messages[-1]).text
       responses.append(response)
@@ -189,6 +190,12 @@ def model_call_wrapper_single(
     return response
   elif "gemini" in model_url:
     model = genai.GenerativeModel(model_url)
+    for message in messages:
+      if message["role"] == "system":
+        message["role"] = "user"
+      if "content" in message:
+        message["parts"] = message["content"]
+        del message["content"]
     chat = model.start_chat(history=messages[:-1])
     response = chat.send_message(messages[-1]).text
     return response
