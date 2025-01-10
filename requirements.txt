@@ -3,6 +3,7 @@ pyperplan
 pandas
 tqdm
 argparse
+datasets
 tenacity
 transformers
 google-generativeai

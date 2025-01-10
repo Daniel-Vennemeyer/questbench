@@ -19,6 +19,7 @@ import json
 import random
 import re
 
+import datasets
 from evaluators.evaluator import Evaluator
 from model_utils import cached_generate_single
 import pandas as pd
@@ -47,13 +48,11 @@ class GSMEvaluator(Evaluator):
     assist_prompt: system prompt for current evaluation mode
     user_prompt: user prompt for current evaluation mode
     batch_size: batch size for evaluation
-    orig_dataset: original dataset
   """
 
   def __init__(
       self,
       model_name: str,
-      orig_data_file: str,
       cache=None,
       cache_file=None,
       use_cot: bool = False,
@@ -105,7 +104,7 @@ Possible questions:
 
     self.batch_size = 1
 
-    self.orig_dataset = pd.read_csv(open(orig_data_file))
+    self.orig_dataset = datasets.load_dataset("qintongli/GSM-Plus")
 
   def generate_query(
       self,
@@ -277,7 +276,6 @@ Possible questions:
     if batch_size is None:
       batch_size = self.batch_size
     batch_ids = [[]]
-    batch_intents = [[]]
     batch_requests = [[]]
     batch_gt_answers = [[]]
     batch_gt_queries = [[]]
@@ -299,17 +297,14 @@ Possible questions:
           if variable == q_to_ask:
             q_to_ask_index = v
         questions.append(f"{len(questions)}. No questions needed.")
-        intent = datum["Full Problem"]
         answer = datum["Full Answer"]
 
         if len(batch_requests[-1]) >= batch_size:
           batch_ids.append([])
-          batch_intents.append([])
           batch_requests.append([])
           batch_gt_answers.append([])
           batch_gt_queries.append([])
 
-        batch_intents[-1].append(intent)
         batch_requests[-1].append(
             self.user_prompt.format(
                 request=request,
@@ -329,18 +324,20 @@ Possible questions:
             request = datum["Rewritten Problem"]
             response = "Not sure"
           else:
-            request = datum["Full Problem"]
+            if self.verbal_questions:
+              # get from original dataset
+              request = self.orig_dataset["test"][datum["Question ID"]]
+            else:
+              request = datum["Full Problem"]
             response = datum["Full Answer"]
 
           if len(batch_requests[-1]) >= batch_size:
             batch_ids.append([])
-            batch_intents.append([])
             batch_requests.append([])
             batch_gt_answers.append([])
             batch_gt_queries.append([])
 
           batch_ids[-1].append(d)
-          batch_intents[-1].append(datum["Full Problem"])
           batch_requests[-1].append(
               self.user_prompt.format(
                   request=request,
@@ -351,7 +348,6 @@ Possible questions:
 
     return (
         batch_ids,
-        batch_intents,
         batch_requests,
         batch_gt_answers,
         batch_gt_queries,
@@ -459,7 +455,7 @@ Possible questions:
             "max_depth",
             "pred_answer",
             "gt_answer",
-            "intent",
+            "id",
             "request",
             "CSP",
             "num_constraints",
@@ -474,7 +470,6 @@ Possible questions:
     fs_turns = self.make_fewshot_turns(prompt_data)
     (
         batch_ids,
-        batch_intents,
         batch_requests,
         batch_gt_answers,
         batch_gt_queries,
@@ -521,7 +516,7 @@ Possible questions:
             datum["depth"],
             pred_answer,
             batch_gt_answer[i],
-            batch_intents[i],
+            batch_id[i],
             batch_request[i],
             datum["CSP"],
             len(equations),

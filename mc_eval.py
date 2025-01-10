@@ -64,10 +64,6 @@ def main(user_args) -> None:
     assert user_args.domain_name.split("_")[1] in ["csp", "verbal"]
     evaluator = GSMEvaluator(
         user_args.model_name,
-        orig_data_file=os.path.join(
-            user_args.data_dir,
-            "GSM-Q/gsmplus_distractors.csv",
-        ),
         cache_file=cache_file,
         use_cot=use_cot,
         fs_samples=fs_samples,
