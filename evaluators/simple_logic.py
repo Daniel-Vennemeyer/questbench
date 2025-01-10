@@ -20,14 +20,13 @@ import json
 import random
 import re
 
+from evaluators.evaluator import Evaluator
 from model_utils import cached_generate
-from model_utils import GPT_COSTS
-from model_utils import load_cache_file
 import pandas as pd
 import tqdm
 
 
-class SimpleLogicEvaluator:
+class SimpleLogicEvaluator(Evaluator):
   """Evaluator for LLMs on Logic-Q.
 
   Attributes:
@@ -71,34 +70,14 @@ class SimpleLogicEvaluator:
       fs_samples: int = 0,
       eval_mode: str = "mc",
   ):
-    self.model_name = model_name
-    self.generation_config = {
-        "temperature": 0.0,
-        "max_completion_tokens": 512,
-    }
-    if self.model_name == "gemini_pro":
-      self.model_url = "gemini-1.5-pro"
-    elif self.model_name == "gemini_flash":
-      self.model_url = "gemini-1.5-flash"
-    elif self.model_name == "gemma_2b":
-      self.model_url = "google/gemma-2-2b-it"
-    elif self.model_name == "gemma_27b":
-      self.model_url = "google/gemma-2-27b-it"
-    elif self.model_name == "gemma_9b":
-      self.model_url = "google/gemma-2-9b-it"
-    elif self.model_name in GPT_COSTS:
-      self.generation_config = {
-          "temperature": 0.0,
-          "max_completion_tokens": 512,
-          "top_p": 1.0,
-          "frequency_penalty": 0.0,
-          "presence_penalty": 0.0,
-      }
-      self.model_url = "https://api.openai.com/v1/chat/completions"
-    self.cache = cache
-    self.cache_file = cache_file
-    if cache is None:
-      self.cache = load_cache_file(cache_file)
+    super().__init__(
+        model_name,
+        cache=cache,
+        cache_file=cache_file,
+        use_cot=use_cot,
+        fs_samples=fs_samples,
+        eval_mode=eval_mode,
+    )
 
     self.vanilla_prompt = """Suppose you know the following rules about Alice:
     {rules_nl}
@@ -155,9 +134,6 @@ Generate "Answer:" followed by the answer and nothing else."""
     self.fs_fullinfo_prompt = """You will be given a binary question about an attribute of Alice. Please answer it with "Yes" or "No".
 Generate "Answer:" followed by the answer and nothing else."""
 
-    self.use_cot = use_cot
-    self.fs_samples = fs_samples
-    self.eval_mode = eval_mode
     if self.use_cot:
       if self.eval_mode == "mc":
         self.system_prompt = self.cot_prompt

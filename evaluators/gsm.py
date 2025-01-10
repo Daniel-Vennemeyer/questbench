@@ -19,14 +19,13 @@ import json
 import random
 import re
 
+from evaluators.evaluator import Evaluator
 from model_utils import cached_generate_single
-from model_utils import GPT_COSTS
-from model_utils import load_cache_file
 import pandas as pd
 import tqdm
 
 
-class GSMEvaluator:
+class GSMEvaluator(Evaluator):
   """Evaluator for LLMs on GSM-Q.
 
   Attributes:
@@ -62,35 +61,14 @@ class GSMEvaluator:
       verbal_questions: bool = False,
       eval_mode: str = "mc",
   ):
-    self.model_name = model_name
-    self.generation_config = {
-        "temperature": 0.0,
-        "max_completion_tokens": 512,
-    }
-    if self.model_name == "gemini_pro":
-      self.model_url = "gemini-1.5-pro"
-    elif self.model_name == "gemini_flash":
-      self.model_url = "gemini-1.5-flash"
-    elif self.model_name == "gemma_2b":
-      self.model_url = "google/gemma-2-2b-it"
-    elif self.model_name == "gemma_27b":
-      self.model_url = "google/gemma-2-27b-it"
-    elif self.model_name == "gemma_9b":
-      self.model_url = "google/gemma-2-9b-it"
-    elif self.model_name in GPT_COSTS:
-      self.generation_config = {
-          "temperature": 0.0,
-          "max_completion_tokens": 512,
-          "top_p": 1.0,
-          "frequency_penalty": 0.0,
-          "presence_penalty": 0.0,
-      }
-      self.model_url = "https://api.openai.com/v1/chat/completions"
-    self.cache = cache
-    self.cache_file = cache_file
-    if self.cache is None and cache_file is not None:
-      self.cache = load_cache_file(cache_file)
-
+    super().__init__(
+        model_name,
+        cache=cache,
+        cache_file=cache_file,
+        use_cot=use_cot,
+        fs_samples=fs_samples,
+        eval_mode=eval_mode,
+    )
     self.verbal_questions = verbal_questions
     self.assist_mc_prompt = """You are trying to solve a math problem. You must decide whether you have enough information to solve the math problem. Please respond with one of the following-
 If you do not have enough information to solve the math problem, you may ask a question back to the user from a set of predefined "Possible questions". Otherwise, choose "No questions needed."
@@ -104,9 +82,6 @@ Possible questions:
 {possible_qs}"""
     self.user_isambig_prompt = """Math problem: {request}"""
     self.user_fullinfo_prompt = """Math problem: {request}"""
-    self.use_cot = use_cot
-    self.fs_samples = fs_samples
-    self.eval_mode = eval_mode
 
     if self.eval_mode == "mc":
       self.assist_prompt = self.assist_mc_prompt

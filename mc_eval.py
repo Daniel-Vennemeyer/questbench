@@ -25,24 +25,28 @@ import pandas as pd
 
 def main(user_args) -> None:
   domain_main_name = user_args.domain_name.split("_")[0]
-  file_suffix = ""
   use_cot = False
   fs_samples = 0
   use_phys_constraints = False
   if user_args.prompt_mode == "cot":
     use_cot = True
-    file_suffix = "_cot"
   elif user_args.prompt_mode == "phys":
     use_phys_constraints = True
-    file_suffix = "_phys"
   elif user_args.prompt_mode.startswith("fs"):
-    file_suffix = user_args.prompt_mode
     fs_samples = int(user_args.prompt_mode[2:])
-  if not os.path.exists("cache"):
-    os.makedirs("cache")
-  cache_file = (
-      f"cache/{user_args.model_name}_{domain_main_name}{'' if user_args.eval_mode == 'mc' else '_' + user_args.eval_mode}{file_suffix}.jsonl"
-  )
+
+  # Make directories for results and cache
+  if not os.path.exists(user_args.results_dir):
+    os.makedirs(user_args.results_dir)
+  cache_dir = os.path.join(user_args.results_dir, "cache")
+  if not os.path.exists(cache_dir):
+    os.makedirs(cache_dir)
+  data_file_base_name = os.path.splitext(os.path.basename(user_args.data_file))[
+      0
+  ]
+  output_file_name = f"{user_args.model_name}-{user_args.domain_name}-{user_args.eval_mode}-{user_args.prompt_mode}-{data_file_base_name}"
+  cache_file = os.path.join(cache_dir, f"{output_file_name}.jsonl")
+  output_file = os.path.join(user_args.results_dir, f"{output_file_name}.csv")
   print("Loading Evaluator")
   if domain_main_name == "SL":
     evaluator = SimpleLogicEvaluator(
@@ -80,7 +84,7 @@ def main(user_args) -> None:
           user_args.data_dir,
           "GSM-Q/gsm_verbal_heldout_pilot_prompts.csv",
       )
-  elif domain_main_name == "plan":
+  elif domain_main_name == "Planning":
     evaluator = PlanningEvaluator(
         user_args.model_name,
         domain_file=os.path.join(
@@ -102,7 +106,7 @@ def main(user_args) -> None:
         "Planning-Q/planning_heldout_prompts.csv",
     )
   else:
-    assert False
+    raise SystemExit(f"Unknown domain: {domain_main_name}")
 
   print("Loading Data")
   data_file = user_args.data_file
@@ -115,11 +119,10 @@ def main(user_args) -> None:
 
   print("Starting Evaluation")
   results = evaluator.evaluate_data(data, prompt_data)
-  os.makedirs(user_args.results_dir, exist_ok=True)
-  output_fn = f"{user_args.results_dir}/{user_args.model_name}_{user_args.domain_name}_{user_args.eval_mode}{file_suffix}.csv"
-  with open(output_fn, "w") as wf:
+
+  with open(output_file, "w") as wf:
     results.to_csv(wf)
-  print(f"Wrote to {output_fn}")
+  print(f"Wrote to {output_file}")
 
 
 if __name__ == "__main__":
@@ -127,15 +130,11 @@ if __name__ == "__main__":
   parser.add_argument(
       "--model_name",
       type=str,
-      choices=[
-          "gpt-4o",
-          "gemini_flash",
-          "gemini_pro",
-          "gemma_2b",
-          "gemma_27b",
-          "gemma_9b",
-      ],
-      help="Model name",
+      help=(
+          "The name of the model to evaluate. Currently support `gpt-4o`,"
+          " `o1-preview`, `gemini-1.5-flash`, `gemini-1.5-pro`, `gemma_2b`,"
+          " `gemma_27b`, and `gemma_9b`"
+      ),
   )
   parser.add_argument(
       "--domain_name",
@@ -144,9 +143,7 @@ if __name__ == "__main__":
           "SL",
           "GSM_csp",
           "GSM_verbal",
-          "plan",
-          "SL_100",
-          "plan_100",
+          "Planning",
       ],
       help="Domain name",
   )

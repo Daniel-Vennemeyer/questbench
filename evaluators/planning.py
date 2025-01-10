@@ -22,9 +22,8 @@ import os
 import random
 import re
 
+from evaluators.evaluator import Evaluator
 from model_utils import cached_generate
-from model_utils import GPT_COSTS
-from model_utils import load_cache_file
 import pandas as pd
 from Planning.backtrace_utils import make_all_consistent_states
 from Planning.make_heldout_states import make_constraints
@@ -35,7 +34,7 @@ from pyperplan.task import Task
 import tqdm
 
 
-class PlanningEvaluator:
+class PlanningEvaluator(Evaluator):
   """Evaluator for LLMs on Planning-Q.
 
   Attributes:
@@ -98,6 +97,14 @@ class PlanningEvaluator:
       fs_samples: int = 0,
       eval_mode: str = "mc",
   ):
+    super().__init__(
+        model_name,
+        cache=cache,
+        cache_file=cache_file,
+        use_cot=use_cot,
+        fs_samples=fs_samples,
+        eval_mode=eval_mode,
+    )
     self.num_objs_to_problem_spec = {}
     self.domain_file = domain_file
     with open(self.domain_file) as f:
@@ -150,29 +157,6 @@ class PlanningEvaluator:
     self.init_conditions_cache_file = open(
         self.init_conditions_cache_filename, "a"
     )
-
-    self.model_name = model_name
-    self.generation_config = {
-        "temperature": 0.0,
-        "max_completion_tokens": 512,
-    }
-    # self.openai_headers = None
-    if self.model_name == "gemini_pro":
-      self.model_url = "gemini-1.5-pro"
-    elif self.model_name == "gemini_flash":
-      self.model_url = "gemini-1.5-flash"
-    elif self.model_name == "gemma_2b":
-      self.model_url = "google/gemma-2-2b-it"
-    elif self.model_name == "gemma_27b":
-      self.model_url = "google/gemma-2-27b-it"
-    elif self.model_name == "gemma_9b":
-      self.model_url = "google/gemma-2-9b-it"
-    elif self.model_name in GPT_COSTS:
-      self.model_url = "https://api.openai.com/v1/chat/completions"
-    self.cache = cache
-    self.cache_file = cache_file
-    if cache is None:
-      self.cache = load_cache_file(cache_file)
 
     self.vanilla_prompt = """You will be given a planning problem in the domain defined by the following PDDL:
 
@@ -308,10 +292,8 @@ Known facts about current state:
 
 Goal state:
 {goals}"""
-    self.eval_mode = eval_mode
-    self.use_cot = use_cot
     self.use_phys_constraints = use_phys_constraints
-    self.fs_samples = fs_samples
+
     if self.use_cot:
       if self.eval_mode == "mc":
         self.system_prompt = self.cot_prompt
