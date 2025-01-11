@@ -415,7 +415,11 @@ Possible questions:
           request = datum["Rewritten Problem"]
           response = "Not sure"
         else:
-          request = datum["Full Problem"]
+          if self.verbal_questions:
+            # get from original dataset
+            request = self.orig_dataset["test"][datum["Question ID"]]
+          else:
+            request = datum["Full Problem"]
           response = datum["Full Answer"]
 
         fewshot_turns.append([
