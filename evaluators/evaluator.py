@@ -1,4 +1,4 @@
-# Copyright 2025 DeepMind Technologies Limited
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ class Evaluator:
     use_cot: whether to use CoT or not
     fs_samples: number of few-shot samples to use
     eval_mode: evaluation mode, one of "mc", "isambig", "fullinfo"
+    model_role_name: role name for the model
   """
 
   def __init__(
@@ -41,6 +42,7 @@ class Evaluator:
       use_cot: bool = False,
       fs_samples: int = 0,
       eval_mode: str = "mc",
+      model_role_name: str = "model",
   ):
     self.model_name = model_name
     self.generation_config = {
@@ -68,6 +70,9 @@ class Evaluator:
     self.cache_file = cache_file
     if cache is None and cache_file is not None:
       self.cache = load_cache_file(cache_file)
+      print(f"Loaded {len(self.cache)} entries from {cache_file}")
     self.use_cot = use_cot
     self.fs_samples = fs_samples
     self.eval_mode = eval_mode
+    self.model_role_name = model_role_name
+

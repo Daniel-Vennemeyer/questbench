@@ -1,4 +1,4 @@
-# Copyright 2025 DeepMind Technologies Limited
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,6 +69,8 @@ class SimpleLogicEvaluator(Evaluator):
       use_cot: bool = False,
       fs_samples: int = 0,
       eval_mode: str = "mc",
+      batch_size: int = 1,
+      **kwargs,
   ):
     super().__init__(
         model_name,
@@ -77,6 +79,7 @@ class SimpleLogicEvaluator(Evaluator):
         use_cot=use_cot,
         fs_samples=fs_samples,
         eval_mode=eval_mode,
+        **kwargs,
     )
 
     self.vanilla_prompt = """Suppose you know the following rules about Alice:
@@ -159,7 +162,7 @@ Generate "Answer:" followed by the answer and nothing else."""
         self.system_prompt = self.vanilla_fullinfo_prompt
       self.request = self.non_fs_request
 
-    self.batch_size = 1
+    self.batch_size = batch_size
 
   def evaluate_batch(
       self,
@@ -217,9 +220,10 @@ Generate "Answer:" followed by the answer and nothing else."""
     ):
       conversation = []
       conversation.append({"role": "user", "text": request})  # user: ambig q
-      conversation.append(
-          {"role": "assistant", "text": response}  # agent: clarifying q
-      )
+      conversation.append({
+          "role": self.model_role_name,
+          "text": response,
+      })  # agent: clarifying q
       if "End questioning" in response:
         response = "End questioning"
       else:
@@ -235,7 +239,9 @@ Generate "Answer:" followed by the answer and nothing else."""
           if n_answer_loops > 5:
             print("Too many loops")
             break
-          batch_prompts[i].append({"role": "assistant", "content": response})
+          batch_prompts[i].append(
+              {"role": self.model_role_name, "content": response}
+          )
           if self.eval_mode == "mc":
             batch_prompts[i].append({
                 "role": "system",
@@ -270,7 +276,7 @@ Generate "Answer:" followed by the answer and nothing else."""
               generation_config=self.generation_config,
           )
           response = batch_response[0]
-          conversation.append({"role": "assistant", "text": response})
+          conversation.append({"role": self.model_role_name, "text": response})
           n_answer_loops += 1
         response = response.split("Question:")[-1].strip()
         # regex matching
@@ -506,7 +512,7 @@ Generate "Answer:" followed by the answer and nothing else."""
                 ),
             },
             {
-                "role": "assistant",
+                "role": self.model_role_name,
                 "content": f"Question: Is Alice {random_gt_attr}?",
             },
         ])
@@ -552,7 +558,7 @@ Generate "Answer:" followed by the answer and nothing else."""
                 ),
             },
             {
-                "role": "assistant",
+                "role": self.model_role_name,
                 "content": f"Answer: {goal_is_true}",
             },
         ])

@@ -18,12 +18,11 @@ pip install -r requirements.txt
 ```
 
 ## Download datasets
-The datasets are publicly available at
-[TODO](TODO).
+[Click here to download the datasets.](https://storage.googleapis.com/questbench/questbench_data.tar.gz)
 
-After downloading, expand the Logic-Q rulesets
+After downloading, expand the compressed file.
 ```bash
-tar -xvf data/Logic-Q/SL_RP/RP/RP.tar.gz
+tar -xzvf questbench_data.tar.gz
 ```
 
 ## Run evaluations
@@ -66,8 +65,6 @@ questbench_data/GSM-Q/gsm_CSP_heldout_pilot.csv
 questbench_data/GSM-Q/gsm_verbal_heldout_pilot.csv
 ```
 
-
-
 ## Generate datasets
 Before running any code, be sure to run
 ```bash
@@ -107,23 +104,23 @@ python Planning/make_data.py \
 ```
 where `input_dir` is the `output_dir` from the previous command.
 
-
 ### GSM-Q
-GSM-Q was created through human annotation. To find the original data, see
-[TODO](TODO).
+GSM-Q was created through human annotation.
 
-
-
+Please see the technical report for more details.
 
 ## Citing this work
-
-Coming soon.
-
-```latex
-Coming soon.
+```
+@techreport{li2025,
+  title={QuestBench: Can LLMs ask the right question to acquire information in reasoning tasks?},
+  author={Belinda Li and Been Kim and Zi Wang},
+  year={2025},
+  institution={Google DeepMind}
+}
 ```
 
 ## License and disclaimer
+<!-- mdlint off(LINE_OVER_80) -->
 
 Copyright 2025 Google LLC
 

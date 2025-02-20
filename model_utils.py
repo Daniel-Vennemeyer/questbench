@@ -1,4 +1,4 @@
-# Copyright 2025 DeepMind Technologies Limited
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 
 """Utility functions for calling models."""
 
+from concurrent import futures
 import json
 import os
 from typing import Dict, List
@@ -27,6 +28,7 @@ import torch
 import transformers
 
 
+ThreadPoolExecutor = futures.ThreadPoolExecutor
 pipeline = transformers.pipeline
 wait_random_exponential = tenacity.wait_random_exponential
 stop_after_attempt = tenacity.stop_after_attempt
@@ -100,6 +102,10 @@ def openai_request(model_url, data):
   return response
 
 
+@retry(
+    stop=stop_after_attempt(5),  # Retry at most 5 times
+    wait=tenacity.wait_fixed(20),  # Wait 20 seconds between retries
+)
 def model_call_wrapper(
     model_name,
     model_url,
@@ -107,22 +113,37 @@ def model_call_wrapper(
     generation_config: Dict[str, str],
 ) -> List[str]:
   """Wrapper for calling various types of models, including Gemini and OpenAI models."""
+  def get_batch_responses(get_response):
+    if (
+        "single_thread" in generation_config
+        and generation_config["single_thread"]
+    ):
+      responses = []
+      for messages in batch_messages:
+        responses.append(get_response(messages))
+      return responses
+    else:
+      with ThreadPoolExecutor(max_workers=len(batch_messages)) as executor:
+        responses = executor.map(
+            get_response,
+            batch_messages,
+        )
+        return list(responses)
+
   if model_name in GPT_COSTS:
-    responses = []
-    for messages in batch_messages:
+    def get_response(messages):
       data = {
           "model": model_name,
           "messages": messages,
           **generation_config,
       }
       response = openai_request(model_url, data)
-      responses.append(response)
-    return responses
+      return response
+    return get_batch_responses(get_response)
   elif "gemini" in model_url:
     # vertexai
-    model = genai.GenerativeModel(model_url)
-    responses = []
-    for messages in batch_messages:
+    def get_response(messages):
+      model = genai.GenerativeModel(model_url)
       for message in messages:
         if message["role"] == "system":
           message["role"] = "user"
@@ -130,9 +151,9 @@ def model_call_wrapper(
           message["parts"] = message["content"]
           del message["content"]
       chat = model.start_chat(history=messages[:-1])
-      response = chat.send_message(messages[-1]).text
-      responses.append(response)
-    return responses
+      return chat.send_message(messages[-1]).text
+
+    return get_batch_responses(get_response)
   elif "gemma" in model_url:
     # gemma
     pipe = pipeline(
@@ -162,11 +183,15 @@ def model_call_wrapper(
     return responses
 
 
+# @retry(
+#     stop=stop_after_attempt(5),  # Retry at most 5 times
+#     wait=wait_random_exponential(
+#         multiplier=1, max=60
+#     ),  # Exponential backoff, random wait time between retries
+# )
 @retry(
     stop=stop_after_attempt(5),  # Retry at most 5 times
-    wait=wait_random_exponential(
-        multiplier=1, max=60
-    ),  # Exponential backoff, random wait time between retries
+    wait=tenacity.wait_fixed(20),  # Wait 20 seconds between retries
 )
 def model_call_wrapper_single(
     messages: List[Dict[str, str]],

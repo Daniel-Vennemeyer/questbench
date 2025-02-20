@@ -1,4 +1,4 @@
-# Copyright 2025 DeepMind Technologies Limited
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -96,6 +96,8 @@ class PlanningEvaluator(Evaluator):
       use_phys_constraints: bool = False,
       fs_samples: int = 0,
       eval_mode: str = "mc",
+      batch_size: int = 1,
+      **kwargs,
   ):
     super().__init__(
         model_name,
@@ -104,6 +106,7 @@ class PlanningEvaluator(Evaluator):
         use_cot=use_cot,
         fs_samples=fs_samples,
         eval_mode=eval_mode,
+        **kwargs,
     )
     self.num_objs_to_problem_spec = {}
     self.domain_file = domain_file
@@ -328,7 +331,7 @@ Goal state:
       else:
         self.system_prompt = self.vanilla_phys_constraints_prompt
 
-    self.batch_size = 1
+    self.batch_size = batch_size
 
   def _parse(self, domain_file, problem_file):
     # Parsing
@@ -558,8 +561,8 @@ Goal state:
                         true_in_init_state,
                         false_in_init_state,
                         contradicting_fact_pairs=contradicting_fact_pairs,
-                        IMPOSSIBLE_FACTS=impossible_facts,
-                        CONSTRAINTS=constraints,
+                        impossible_facts=impossible_facts,
+                        constraints=constraints,
                     )
                 )
                 all_states = []
@@ -658,10 +661,13 @@ Goal state:
     ):
       conversation = []
       conversation.append({"role": "user", "text": request})  # user: ambig q
-      conversation.append(
-          {"role": "assistant", "text": response}  # agent: clarifying q
+      conversation.append({
+          "role": self.model_role_name,
+          "text": response,
+      })  # agent: clarifying q
+      batch_prompts[i].append(
+          {"role": self.model_role_name, "content": response}
       )
-      batch_prompts[i].append({"role": "assistant", "content": response})
       nloops = 0
       if "Answer:" in response:
         response = response.split("Answer:")[-1].strip()
@@ -698,9 +704,11 @@ Goal state:
             generation_config=self.generation_config,
         )
         response = generated_responses[0]
-        batch_prompts[i].append({"role": "assistant", "content": response})
+        batch_prompts[i].append(
+            {"role": self.model_role_name, "content": response}
+        )
         conversation.append({
-            "role": "assistant",
+            "role": self.model_role_name,
             "text": response,
         })
         nloops += 1
@@ -834,7 +842,7 @@ Goal state:
                 ),
             },
             {
-                "role": "assistant",
+                "role": self.model_role_name,
                 "content": f"{gt_attr_idx}",
             },
         ])
@@ -871,7 +879,7 @@ Goal state:
                 ),
             },
             {
-                "role": "assistant",
+                "role": self.model_role_name,
                 "content": gt_plan_nl,
             },
         ])

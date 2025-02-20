@@ -1,4 +1,4 @@
-# Copyright 2025 DeepMind Technologies Limited
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -59,6 +59,8 @@ class GSMEvaluator(Evaluator):
       fs_samples: int = 0,
       verbal_questions: bool = False,
       eval_mode: str = "mc",
+      batch_size: int = 1,
+      **kwargs,
   ):
     super().__init__(
         model_name,
@@ -67,6 +69,7 @@ class GSMEvaluator(Evaluator):
         use_cot=use_cot,
         fs_samples=fs_samples,
         eval_mode=eval_mode,
+        **kwargs,
     )
     self.verbal_questions = verbal_questions
     self.assist_mc_prompt = """You are trying to solve a math problem. You must decide whether you have enough information to solve the math problem. Please respond with one of the following-
@@ -102,7 +105,7 @@ Possible questions:
           """ Generate one of the above outputs and nothing else."""
       )
 
-    self.batch_size = 1
+    self.batch_size = batch_size
 
     self.orig_dataset = datasets.load_dataset("qintongli/GSM-Plus")
 
@@ -139,10 +142,10 @@ Possible questions:
     new_cache_entries.extend(new_cache_entry)
     conversation.append({"role": "user", "text": request})  # user: ambig q
     conversation.append({
-        "role": "assistant",
+        "role": self.model_role_name,
         "text": response,
     })
-    prompt.append({"role": "assistant", "content": response})
+    prompt.append({"role": self.model_role_name, "content": response})
 
     if self.eval_mode == "mc":
       # check whether choice is correct
@@ -171,7 +174,7 @@ Possible questions:
                 ' your choice. Output "Choice: <number>" and nothing else.'
             ),
         })
-        prompt.append({"role": "assistant", "content": response})
+        prompt.append({"role": self.model_role_name, "content": response})
         n_loops += 1
         if n_loops > 5:
           break
@@ -213,7 +216,7 @@ Possible questions:
             "role": "system",
             "content": prompt_content,
         })
-        prompt.append({"role": "assistant", "content": response})
+        prompt.append({"role": self.model_role_name, "content": response})
         n_loops += 1
         if n_loops > 5:
           break
@@ -393,7 +396,7 @@ Possible questions:
                 ),
             },
             {
-                "role": "assistant",
+                "role": self.model_role_name,
                 "content": f"Choice: {q_to_ask_index}",
             },
         ])
@@ -402,7 +405,7 @@ Possible questions:
         #   fewshot_turns[-1].append()
         # else:
         #   fewshot_turns[-1].append({
-        #       "role": "assistant",
+        #       "role": self.model_role_name,
         #       "content":
         #       # "content": f'Question: What is the value of {q_to_ask}?',
         #   })
@@ -430,7 +433,7 @@ Possible questions:
                 ),
             },
             {
-                "role": "assistant",
+                "role": self.model_role_name,
                 "content": f"Answer: {response}",
             },
         ])

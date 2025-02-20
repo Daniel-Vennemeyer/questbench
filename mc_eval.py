@@ -1,4 +1,4 @@
-# Copyright 2025 DeepMind Technologies Limited
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -55,6 +55,8 @@ def main(user_args) -> None:
         use_cot=use_cot,
         fs_samples=fs_samples,
         eval_mode=user_args.eval_mode,
+        batch_size=user_args.batch_size,
+        model_role_name=user_args.model_role_name,
     )
     prompt_file = os.path.join(
         user_args.data_dir,
@@ -69,6 +71,8 @@ def main(user_args) -> None:
         fs_samples=fs_samples,
         verbal_questions="verbal" in user_args.domain_name,
         eval_mode=user_args.eval_mode,
+        batch_size=user_args.batch_size,
+        model_role_name=user_args.model_role_name,
     )
     if user_args.domain_name.split("_")[1] == "csp":
       prompt_file = os.path.join(
@@ -96,6 +100,8 @@ def main(user_args) -> None:
         use_phys_constraints=use_phys_constraints,
         fs_samples=fs_samples,
         eval_mode=user_args.eval_mode,
+        batch_size=user_args.batch_size,
+        model_role_name=user_args.model_role_name,
     )
     prompt_file = os.path.join(
         user_args.data_dir,
@@ -141,7 +147,11 @@ if __name__ == "__main__":
           "GSM_verbal",
           "Planning",
       ],
-      help="Domain name",
+      help=(
+          "Domain name. `SL` is for Simple Logic, `GSM_csp` is for GSM-Q with"
+          " CSPs, `GSM_verbal` is for GSM-Q with verbal questions, and"
+          " `Planning` is for Planning-Q."
+      ),
   )
   parser.add_argument(
       "--eval_mode",
@@ -151,27 +161,59 @@ if __name__ == "__main__":
           "isambig",
           "fullinfo",
       ],
-      help="Eval mode",
+      help=(
+          "Evaluation mode. `mc` is for the multiple choice version of"
+          " QuestBench, `isambig` is for evaluating whether the model can"
+          " identify the task is ambiguous, and `fullinfo` is for evaluating"
+          " the model's performance on the task with the full information"
+          " (i.e., no missing information)."
+      ),
   )
-  parser.add_argument("--data_file", type=str, help="Data file")
+  parser.add_argument(
+      "--data_file", type=str, help="The path to the data file."
+  )
   parser.add_argument(
       "--data_dir",
       type=str,
-      default="data",
-      help="Directory containing data",
+      default="questbench_data",
+      help=(
+          "Directory containing data. Default is `questbench_data` in the"
+          " current directory."
+      ),
   )
   parser.add_argument(
       "--prompt_mode",
       type=str,
       choices=["", "cot", "fs4"],
       default="",
-      help="Use vanilla, CoT, or fewshot prompting (with 4 samples)",
+      help="Use vanilla, CoT, or fewshot prompting (with 4 samples).",
   )
   parser.add_argument(
       "--results_dir",
       type=str,
       default="results",
-      help="Directory to write results to",
+      help=(
+          "Directory to write results to. Default is `results` in the current"
+          " directory."
+      ),
+  )
+  parser.add_argument(
+      "--batch_size",
+      type=int,
+      default=1,
+      help=(
+          "Batch size for evaluation."
+      ),
+  )
+  parser.add_argument(
+      "--model_role_name",
+      type=str,
+      default="model",
+      help=(
+          "The name of the model role. In Gemini, this should be `model`. In"
+          " OpenAI, this should be `assistant`. You can use other role names as"
+          " needed."
+      ),
   )
   args = parser.parse_args()
   main(args)
