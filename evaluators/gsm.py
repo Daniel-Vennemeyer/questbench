@@ -48,6 +48,8 @@ class GSMEvaluator(Evaluator):
     assist_prompt: system prompt for current evaluation mode
     user_prompt: user prompt for current evaluation mode
     batch_size: batch size for evaluation
+    model_role_name: role name for the model
+    parallel_model_calls: whether to make parallel calls to the model
   """
 
   def __init__(

@@ -56,6 +56,10 @@ GPT_COSTS = {
         "prompt_tokens": 15 / 1000000,
         "completion_tokens": 60 / 1000000,
     },
+    "o1": {
+        "prompt_tokens": 15 / 1000000,
+        "completion_tokens": 60 / 1000000,
+    },
 }
 
 
@@ -74,7 +78,7 @@ def jsonify_prompt(prompt):
 
 
 @retry(
-    stop=stop_after_attempt(5),  # Retry at most 5 times
+    stop=stop_after_attempt(10),  # Retry at most 5 times
     wait=wait_random_exponential(
         multiplier=1, max=60
     ),  # Exponential backoff, random wait time between retries
@@ -103,7 +107,7 @@ def openai_request(model_url, data):
 
 
 @retry(
-    stop=stop_after_attempt(5),  # Retry at most 5 times
+    stop=stop_after_attempt(10),  # Retry at most 5 times
     wait=tenacity.wait_fixed(20),  # Wait 20 seconds between retries
 )
 def model_call_wrapper(
@@ -111,18 +115,18 @@ def model_call_wrapper(
     model_url,
     batch_messages: List[List[Dict[str, str]]],
     generation_config: Dict[str, str],
+    parallel_model_calls: bool,
 ) -> List[str]:
   """Wrapper for calling various types of models, including Gemini and OpenAI models."""
   def get_batch_responses(get_response):
-    if (
-        "single_thread" in generation_config
-        and generation_config["single_thread"]
-    ):
+    if not parallel_model_calls:
+      print("Not parallel model calls")
       responses = []
       for messages in batch_messages:
         responses.append(get_response(messages))
       return responses
     else:
+      print("Parallel model calls")
       with ThreadPoolExecutor(max_workers=len(batch_messages)) as executor:
         responses = executor.map(
             get_response,
@@ -259,6 +263,7 @@ def cached_generate(
     cache,
     cache_file,
     generation_config,
+    parallel_model_calls,
 ):
   """Generate a batch of responses from a model, caching responses.
 
@@ -269,6 +274,7 @@ def cached_generate(
     cache: cache of LLM responses.
     cache_file: cache file of LLM responses.
     generation_config: generation config for LLM
+    parallel_model_calls: whether to make parallel calls to the model
 
   Returns:
     The batch of responses and the cost of the generation.
@@ -286,6 +292,7 @@ def cached_generate(
         model_name,
         model_url,
         generation_config=generation_config,
+        parallel_model_calls=parallel_model_calls,
     )
   new_batch_prompts = []
   for prompt in batch_prompts:
@@ -300,6 +307,7 @@ def cached_generate(
       model_url,
       batch_messages=new_batch_prompts,
       generation_config=generation_config,
+      parallel_model_calls=parallel_model_calls,
   )
   for prompt, response in zip(new_batch_prompts, batch_responses):
     jsonified_prompt = jsonify_prompt(prompt)

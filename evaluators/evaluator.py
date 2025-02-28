@@ -32,6 +32,7 @@ class Evaluator:
     fs_samples: number of few-shot samples to use
     eval_mode: evaluation mode, one of "mc", "isambig", "fullinfo"
     model_role_name: role name for the model
+    parallel_model_calls: whether to make parallel calls to the model
   """
 
   def __init__(
@@ -43,6 +44,7 @@ class Evaluator:
       fs_samples: int = 0,
       eval_mode: str = "mc",
       model_role_name: str = "model",
+      parallel_model_calls: bool = True,
   ):
     self.model_name = model_name
     self.generation_config = {
@@ -66,6 +68,8 @@ class Evaluator:
           "presence_penalty": 0.0,
       }
       self.model_url = "https://api.openai.com/v1/chat/completions"
+    else:
+      self.model_url = self.model_name
     self.cache = cache
     self.cache_file = cache_file
     if cache is None and cache_file is not None:
@@ -75,4 +79,4 @@ class Evaluator:
     self.fs_samples = fs_samples
     self.eval_mode = eval_mode
     self.model_role_name = model_role_name
-
+    self.parallel_model_calls = parallel_model_calls

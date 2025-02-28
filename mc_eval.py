@@ -57,6 +57,7 @@ def main(user_args) -> None:
         eval_mode=user_args.eval_mode,
         batch_size=user_args.batch_size,
         model_role_name=user_args.model_role_name,
+        parallel_model_calls=user_args.parallel_model_calls,
     )
     prompt_file = os.path.join(
         user_args.data_dir,
@@ -73,6 +74,7 @@ def main(user_args) -> None:
         eval_mode=user_args.eval_mode,
         batch_size=user_args.batch_size,
         model_role_name=user_args.model_role_name,
+        parallel_model_calls=user_args.parallel_model_calls,
     )
     if user_args.domain_name.split("_")[1] == "csp":
       prompt_file = os.path.join(
@@ -102,6 +104,7 @@ def main(user_args) -> None:
         eval_mode=user_args.eval_mode,
         batch_size=user_args.batch_size,
         model_role_name=user_args.model_role_name,
+        parallel_model_calls=user_args.parallel_model_calls,
     )
     prompt_file = os.path.join(
         user_args.data_dir,
@@ -201,9 +204,7 @@ if __name__ == "__main__":
       "--batch_size",
       type=int,
       default=1,
-      help=(
-          "Batch size for evaluation."
-      ),
+      help="Batch size for evaluation.",
   )
   parser.add_argument(
       "--model_role_name",
@@ -214,6 +215,12 @@ if __name__ == "__main__":
           " OpenAI, this should be `assistant`. You can use other role names as"
           " needed."
       ),
+  )
+  parser.add_argument(
+      "--no_thread_pool",
+      action="store_false",
+      dest="parallel_model_calls",
+      help="Disable thread pool.",
   )
   args = parser.parse_args()
   main(args)

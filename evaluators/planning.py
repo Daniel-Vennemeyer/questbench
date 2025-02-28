@@ -83,6 +83,8 @@ class PlanningEvaluator(Evaluator):
     request: user prompt for current evaluation mode
     system_prompt: system prompt for current evaluation mode
     batch_size: batch size for evaluation
+    model_role_name: role name for the model
+    parallel_model_calls: whether to make parallel calls to the model
   """
 
   def __init__(
@@ -652,6 +654,7 @@ Goal state:
         cache=cache,
         cache_file=cache_file,
         generation_config=self.generation_config,
+        parallel_model_calls=self.parallel_model_calls,
     )
 
     batch_convos = []
@@ -702,6 +705,7 @@ Goal state:
             cache=cache,
             cache_file=cache_file,
             generation_config=self.generation_config,
+            parallel_model_calls=self.parallel_model_calls,
         )
         response = generated_responses[0]
         batch_prompts[i].append(

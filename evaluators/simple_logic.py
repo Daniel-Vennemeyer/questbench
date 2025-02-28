@@ -16,6 +16,7 @@
 """Evaluate LLMs on Logic-Q."""
 
 import ast
+import copy
 import json
 import random
 import re
@@ -53,12 +54,14 @@ class SimpleLogicEvaluator(Evaluator):
     non_fs_request: User prompt for vanilla and CoT evaluation
     fs_request: User prompt for few-shot evaluation for multiple choice
       evaluation
-    use_cot:
-    fs_samples:
-    eval_mode:
-    system_prompt:
+    use_cot: whether to use CoT or not
+    fs_samples: number of few-shot samples to use
+    eval_mode: evaluation mode, one of "mc", "isambig", "fullinfo"
+    system_prompt: system prompt for current evaluation mode
     request: user prompt for current evaluation mode
     batch_size: batch size for evaluation
+    model_role_name: role name for the model
+    parallel_model_calls: whether to make parallel calls to the model
   """
 
   def __init__(
@@ -211,6 +214,7 @@ Generate "Answer:" followed by the answer and nothing else."""
         cache=cache,
         cache_file=cache_file,
         generation_config=self.generation_config,
+        parallel_model_calls=self.parallel_model_calls,
     )
 
     batch_convos = []
@@ -274,6 +278,7 @@ Generate "Answer:" followed by the answer and nothing else."""
               cache=cache,
               cache_file=cache_file,
               generation_config=self.generation_config,
+              parallel_model_calls=self.parallel_model_calls,
           )
           response = batch_response[0]
           conversation.append({"role": self.model_role_name, "text": response})
@@ -402,8 +407,12 @@ Generate "Answer:" followed by the answer and nothing else."""
         batch_ids[-1].append(d)
         batch_gt_queries[-1].append(datum["gt_qs"])
       else:
+        original_known_facts = known_facts
+        original_known_untrue_facts = known_untrue_facts
         for gt_q in datum["gt_q_to_true_derivation"]:
           for is_true in [True, False, None]:
+            known_facts = copy.deepcopy(original_known_facts)
+            known_untrue_facts = copy.deepcopy(original_known_untrue_facts)
             if is_true is None:
               if self.eval_mode != "isambig":
                 continue
@@ -672,4 +681,5 @@ Generate "Answer:" followed by the answer and nothing else."""
         "Accuracy by depth:",
         results.groupby("max_depth").agg({"correct": "mean"}),
     )
+    print(f"Total cost: {total_cost}")
     return results
