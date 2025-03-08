@@ -15,6 +15,7 @@
 
 """Base class for evaluators."""
 
+from model_utils import CLAUDE_COSTS
 from model_utils import GPT_COSTS
 from model_utils import load_cache_file
 
@@ -68,6 +69,12 @@ class Evaluator:
           "presence_penalty": 0.0,
       }
       self.model_url = "https://api.openai.com/v1/chat/completions"
+    elif self.model_name in CLAUDE_COSTS:
+      self.generation_config = {
+          "temperature": 0.0,
+          "max_tokens": 512,
+      }
+      self.model_url = "https://api.anthropic.com/v1/messages"
     else:
       self.model_url = self.model_name
     self.cache = cache

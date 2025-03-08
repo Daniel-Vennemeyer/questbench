@@ -305,9 +305,25 @@ Generate "Answer:" followed by the answer and nothing else."""
             )
             response = "None"
           else:
-            response = (
-                response.lower().split("answer:")[-1].strip().strip(".").strip()
+            orig_response = response
+            first_line = orig_response.split("\n")[0]
+            processed_response = first_line + (
+                response.lower().split("answer")[-1]
             )
+            all_yes = "yes" in processed_response
+            all_no = "no" in processed_response
+            all_not_sure = "not sure" in processed_response
+            if all_yes and not all_no and not all_not_sure:
+              response = "yes"
+            elif all_no and not all_not_sure:
+              response = "no"
+            elif all_not_sure:
+              response = "not sure"
+            else:
+              print(
+                  f"No answer found in response: {orig_response} \n for prompt:"
+                  f" {json.dumps(batch_prompts[i])}"
+              )
       batch_responses[i] = response
       batch_convos.append(conversation)
       batch_correct.append(response.strip() in batch_gt_queries[i])

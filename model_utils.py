@@ -46,6 +46,13 @@ if "OPENAI_API_KEY" in os.environ:
       "OpenAI-Project": os.environ["OPENAI_PROJECT"],
   }
 
+ANTHROPIC_HEADER = {}
+if "ANTHROPIC_API_KEY" in os.environ:
+  ANTHROPIC_HEADER = {
+      "Content-Type": "application/json",
+      "Anthropic-Version": "2023-06-01",
+      "X-Api-Key": os.environ["ANTHROPIC_API_KEY"],
+  }
 
 GPT_COSTS = {
     "gpt-4o": {
@@ -59,6 +66,18 @@ GPT_COSTS = {
     "o1": {
         "prompt_tokens": 15 / 1000000,
         "completion_tokens": 60 / 1000000,
+    },
+}
+
+
+CLAUDE_COSTS = {
+    "claude-3-5-sonnet-20241022": {
+        "prompt_tokens": 5 / 1000000,
+        "completion_tokens": 15 / 1000000,
+    },
+    "claude-3-5-haiku-20241022": {
+        "prompt_tokens": 5 / 1000000,
+        "completion_tokens": 15 / 1000000,
     },
 }
 
@@ -78,7 +97,7 @@ def jsonify_prompt(prompt):
 
 
 @retry(
-    stop=stop_after_attempt(10),  # Retry at most 5 times
+    stop=stop_after_attempt(10),
     wait=wait_random_exponential(
         multiplier=1, max=60
     ),  # Exponential backoff, random wait time between retries
@@ -107,7 +126,39 @@ def openai_request(model_url, data):
 
 
 @retry(
-    stop=stop_after_attempt(10),  # Retry at most 5 times
+    stop=stop_after_attempt(10),
+    wait=wait_random_exponential(
+        multiplier=1, max=60
+    ),  # Exponential backoff, random wait time between retries
+)
+def claude_request(
+    model_url,
+    data
+):
+  """Sends a request to a Claude model.
+
+  Args:
+    model_url: The model url.
+    data: The data to send to the model.
+
+  Returns:
+    The response from the model.
+
+  Raises:
+    Exception: Any errors in the response
+  """
+  response = requests.post(model_url, headers=ANTHROPIC_HEADER, json=data)
+  try:
+    response = response.json()
+    assert "content" in response
+  except Exception as e:
+    print(response)
+    raise e
+  return response
+
+
+@retry(
+    stop=stop_after_attempt(10),
     wait=tenacity.wait_fixed(20),  # Wait 20 seconds between retries
 )
 def model_call_wrapper(
@@ -118,15 +169,16 @@ def model_call_wrapper(
     parallel_model_calls: bool,
 ) -> List[str]:
   """Wrapper for calling various types of models, including Gemini and OpenAI models."""
+  if not batch_messages:
+    return []
   def get_batch_responses(get_response):
-    if not parallel_model_calls:
-      print("Not parallel model calls")
+    if not parallel_model_calls or len(batch_messages) <= 1:
+      print("not parallel")
       responses = []
       for messages in batch_messages:
         responses.append(get_response(messages))
       return responses
     else:
-      print("Parallel model calls")
       with ThreadPoolExecutor(max_workers=len(batch_messages)) as executor:
         responses = executor.map(
             get_response,
@@ -157,6 +209,19 @@ def model_call_wrapper(
       chat = model.start_chat(history=messages[:-1])
       return chat.send_message(messages[-1]).text
 
+    return get_batch_responses(get_response)
+  elif model_name in CLAUDE_COSTS:
+    def get_response(messages):
+      for message in messages:
+        if message["role"] == "system":
+          message["role"] = "user"
+      data = {
+          "model": model_name,
+          "messages": messages,
+          **generation_config,
+      }
+      response = claude_request(model_url, data)
+      return response
     return get_batch_responses(get_response)
   elif "gemma" in model_url:
     # gemma
@@ -285,7 +350,6 @@ def cached_generate(
         if turn["role"] == "system":
           prompt[t]["role"] = "user"
     generation_config = {}
-
   if cache is None:
     return model_call_wrapper(
         batch_prompts,
@@ -333,6 +397,8 @@ def cached_generate(
             cache[jsonified_prompt]["usage"][token_type]
             * GPT_COSTS[model_name][token_type]
         )
+    elif model_name in CLAUDE_COSTS:
+      text_output = cache[jsonified_prompt]["content"][0]["text"]
     else:
       text_output = cache[jsonified_prompt]
     batch_responses.append(text_output)

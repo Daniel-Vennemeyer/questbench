@@ -222,14 +222,15 @@ Possible questions:
         n_loops += 1
         if n_loops > 5:
           break
-      if "not sure" in response:
+      if "not sure" in response.lower():
         correct = gt_query == "Not sure"
       else:
-        try:
-          response = re.findall(r"\b[0-9]+\b", response)[0]
-          correct = int(response) == gt_query
-        except ValueError:
+        numbers = re.findall(r"\b[0-9]+\b", response)
+        if not numbers:
           correct = False
+        else:
+          response = numbers[0]
+          correct = int(response) == gt_query
     return correct, response, conversation, new_cache_entries
 
   def parse_auto_eval(self, eval_str):
