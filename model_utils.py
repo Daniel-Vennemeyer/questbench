@@ -35,15 +35,15 @@ stop_after_attempt = tenacity.stop_after_attempt
 
 
 if "GOOGLE_API_KEY" in os.environ:
-  genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
+  genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
 
 OPENAI_HEADER = {}
 if "OPENAI_API_KEY" in os.environ:
   OPENAI_HEADER = {
       "Content-Type": "application/json",
-      "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}",
-      "OpenAI-Organization": os.environ["OPENAI_ORGANIZATION"],
-      "OpenAI-Project": os.environ["OPENAI_PROJECT"],
+      "Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY')}",
+      "OpenAI-Organization": os.environ.get("OPENAI_ORGANIZATION"),
+      "OpenAI-Project": os.environ.get("OPENAI_PROJECT"),
   }
 
 
