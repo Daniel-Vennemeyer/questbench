@@ -3,24 +3,24 @@
 Data and code for generating QuestBench data and evaluating LLMs on it.
 
 ## Installation
-Begin by creating a conda environment to contain the packages needed for
+1. Begin by creating a conda environment to contain the packages needed for
 QuestBench. You can install anaconda here: https://docs.anaconda.com/miniconda/install/#quick-command-line-install
-
 ```bash
 conda create -n questbench PYTHON=3.11
 conda activate questbench
 ```
 
-Install PyTorch following the instructions here: https://pytorch.org/get-started/locally/
+2. Install PyTorch following the instructions here: https://pytorch.org/get-started/locally/
 
+3. Install the remaining requirements
 ```bash
 pip install -r requirements.txt
 ```
 
 ## Download datasets
-[Click here to download the datasets.](https://storage.googleapis.com/questbench/questbench_data.tar.gz)
+1. [Click here to download the datasets.](https://storage.googleapis.com/questbench/questbench_data.tar.gz)
 
-After downloading, expand the compressed file.
+2. After downloading, expand the compressed file.
 ```bash
 tar -xzvf questbench_data.tar.gz
 ```
@@ -46,18 +46,17 @@ export OPENAI_PROJECT=<openai_project_key>
 Next, run the eval
 ```bash
 python mc_eval.py \
-      --model_name [gemini-1.5-pro|gemini-1.5-flash|gpt-4o|o1-preview|gemma-27b|gemma-2b|gemma-9b] \
-      --domain_name [GSM_csp|Planning|SL|GSM_verbal] \
-      --eval_mode [mc|isambig|fullinfo] \
-      --data_dir <data_dir> \
-      --data_file <data_fp> \
-      --prompt_mode [|cot|fs4] \
-      --results_dir <results_dir>
+--model_name [gemini-1.5-pro|gemini-1.5-flash|gpt-4o|o1-preview|gemma-27b|gemma-2b|gemma-9b] \
+--domain_name [GSM_csp|Planning|SL|GSM_verbal] \
+--eval_mode [mc|isambig|fullinfo] \
+--data_dir <data_dir> \
+--data_file <data_fp> \
+--prompt_mode [|cot|fs4] \
+--results_dir <results_dir>
 ```
 
-By default, `--data_dir` is set to `data/` and `--data_file` is set to the
-appropriate file for the domain.
-If you downloaded the datasets from the public website, the data files are in
+* `--data_dir` should be set to the directory containing all the data files. By default, `--data_dir` is set to `questbench_data/`.
+* `--data_file` should be set to the appropriate file for the domain. If you downloaded the datasets from the public website, the data files should be set to
 ```bash
 questbench_data/Logic-Q/simplelogic_heldout_1k.csv
 questbench_data/Planning-Q/planning_heldout_7500.csv

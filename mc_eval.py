@@ -173,7 +173,7 @@ if __name__ == "__main__":
       ),
   )
   parser.add_argument(
-      "--data_file", type=str, help="The path to the data file."
+      "--data_file", type=str, help="The path to the data file.", default=None
   )
   parser.add_argument(
       "--data_dir",
