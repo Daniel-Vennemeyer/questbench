@@ -34,9 +34,9 @@ export GOOGLE_API_KEY=<gemini_api_key>
 Login to HuggingFace to be able to use Gemma models, and start a vllm server with the desired model
 ```bash
 huggingface-cli login
-vllm serve "google/gemma-2-2b-it"
+vllm serve "google/gemma-2-2b-it" --port <port>
 ```
-* Substitute with `google/gemma-2-9b-it` or `google/gemma-2-27b-it` as necessary.
+* Substitute the model name with `google/gemma-2-9b-it` or `google/gemma-2-27b-it` as necessary.
 
 Set your openai key to be able to use GPT models
 ```bash
