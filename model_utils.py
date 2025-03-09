@@ -106,9 +106,57 @@ def openai_request(model_url, data):
   return response
 
 
+def process_gemma_messages(messages):
+  """Process messages for Gemma models to ensure proper formatting.
+  
+  Args:
+    messages: List of message dictionaries with 'role' and 'content' keys.
+    
+  Returns:
+    List of processed messages that follow the alternating user/assistant pattern.
+  """
+  # First, convert system to user and combine consecutive messages
+  processed_messages = []
+  last_role = None
+  
+  for i, message in enumerate(messages):
+    # Convert system role to user role
+    current_role = message["role"]
+    if current_role == "system":
+      current_role = "user"
+      message = {"role": "user", "content": message["content"]}
+    
+    # Combine consecutive messages with the same role
+    if current_role == last_role:
+      processed_messages[-1]["content"] += "\n\n" + message["content"]
+    else:
+      processed_messages.append(message)
+      last_role = current_role
+  
+  # Ensure alternating user/assistant pattern
+  final_messages = []
+  for i, message in enumerate(processed_messages):
+    if i == 0 and message["role"] != "user":
+      # If first message is not from user, add a dummy user message
+      final_messages.append({"role": "user", "content": "Hello"})
+    
+    # Ensure no consecutive messages with same role
+    if i > 0 and message["role"] == final_messages[-1]["role"]:
+      if message["role"] == "user":
+        final_messages.append({"role": "assistant", "content": "I understand."})
+      else:
+        final_messages.append({"role": "user", "content": "Please continue."})
+    
+    final_messages.append(message)
+  
+  return final_messages
+
+
 @retry(
     stop=stop_after_attempt(10),  # Retry at most 5 times
-    wait=tenacity.wait_fixed(20),  # Wait 20 seconds between retries
+    wait=wait_random_exponential(
+        multiplier=1, max=60
+    ),  # Exponential backoff, random wait time between retries
 )
 def model_call_wrapper(
     model_name,
@@ -144,7 +192,7 @@ def model_call_wrapper(
       response = openai_request(model_url, data)
       return response
     return get_batch_responses(get_response)
-  elif "gemini" in model_url:
+  elif "gemini" in model_name.lower():
     # vertexai
     def get_response(messages):
       model = genai.GenerativeModel(model_url)
@@ -158,41 +206,29 @@ def model_call_wrapper(
       return chat.send_message(messages[-1]).text
 
     return get_batch_responses(get_response)
-  elif "gemma" in model_url:
-    # gemma
-    pipe = pipeline(
-        "text-generation",
-        model=model_url,
-        model_kwargs={"torch_dtype": torch.bfloat16},
-        device="cuda" if torch.cuda.is_available() else "cpu",
-    )
-    responses = []
-    for messages in batch_messages:
-      for message in messages:
-        if message["role"] == "system":
-          message["role"] = "user"
-      new_messages = []
-      for i, message in enumerate(messages):
-        if message["role"] == "user":
-          if i == 0 or messages[i - 1]["role"] != "user":
-            new_messages.append(message)
-          else:
-            new_messages[-1]["content"] += "\n\n" + message["content"]
-        else:
-          new_messages.append(message)
-      messages = new_messages
-      outputs = pipe(messages, max_new_tokens=512)
-      assistant_response = outputs[0]["generated_text"][-1]["content"].strip()
-      responses.append(assistant_response)
-    return responses
+  elif "gemma" in model_name.lower():
+    # Use VLLM server for Gemma models
+    def get_response(messages):
+      final_messages = process_gemma_messages(messages)
+      
+      data = {
+          "model": model_name,
+          "messages": final_messages,
+          "temperature": 0.0,
+          "max_tokens": 512,
+      }
+      
+      response = requests.post(model_url, json=data)
+      try:
+        response_json = response.json()
+        return response_json["choices"][0]["message"]["content"].strip()
+      except Exception as e:
+        print(response.text)
+        raise e
+        
+    return get_batch_responses(get_response)
 
 
-# @retry(
-#     stop=stop_after_attempt(5),  # Retry at most 5 times
-#     wait=wait_random_exponential(
-#         multiplier=1, max=60
-#     ),  # Exponential backoff, random wait time between retries
-# )
 @retry(
     stop=stop_after_attempt(5),  # Retry at most 5 times
     wait=tenacity.wait_fixed(20),  # Wait 20 seconds between retries
@@ -217,7 +253,7 @@ def model_call_wrapper_single(
       print(response)
       raise e
     return response
-  elif "gemini" in model_url:
+  elif "gemini" in model_name.lower():
     model = genai.GenerativeModel(model_url)
     for message in messages:
       if message["role"] == "system":
@@ -228,32 +264,24 @@ def model_call_wrapper_single(
     chat = model.start_chat(history=messages[:-1])
     response = chat.send_message(messages[-1]).text
     return response
-  else:
-    assert "gemma" in model_url
-    # gemma
-    for message in messages:
-      if message["role"] == "system":
-        message["role"] = "user"
-    # combine consecutive user messages
-    new_messages = []
-    for i, message in enumerate(messages):
-      if message["role"] == "user":
-        if i == 0 or messages[i - 1]["role"] != "user":
-          new_messages.append(message)
-        else:
-          new_messages[-1]["content"] += "\n\n" + message["content"]
-      else:
-        new_messages.append(message)
-    messages = new_messages
-    pipe = pipeline(
-        "text-generation",
-        model=model_url,
-        model_kwargs={"torch_dtype": torch.bfloat16},
-        device="cuda" if torch.cuda.is_available() else "cpu",
-    )
-    outputs = pipe(messages, max_new_tokens=512)
-    assistant_response = outputs[0]["generated_text"][-1]["content"].strip()
-    return assistant_response
+  elif "gemma" in model_name.lower():
+    final_messages = process_gemma_messages(messages)
+    
+    data = {
+        "model": model_name,
+        "messages": final_messages,
+        "temperature": 0.0,
+        "max_tokens": 512,
+    }
+    
+    response = requests.post(model_url, json=data)
+    try:
+      response_json = response.json()
+      assistant_response = response_json["choices"][0]["message"]["content"].strip()
+      return assistant_response
+    except Exception as e:
+      print(response.text)
+      raise e
 
 
 def cached_generate(

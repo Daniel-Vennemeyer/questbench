@@ -17,7 +17,7 @@
 
 from model_utils import GPT_COSTS
 from model_utils import load_cache_file
-
+from transformers import pipeline
 
 class Evaluator:
   """Base class for evaluators.
@@ -33,6 +33,7 @@ class Evaluator:
     eval_mode: evaluation mode, one of "mc", "isambig", "fullinfo"
     model_role_name: role name for the model
     parallel_model_calls: whether to make parallel calls to the model
+    vllm_port: port for the VLLM server
   """
 
   def __init__(
@@ -45,6 +46,7 @@ class Evaluator:
       eval_mode: str = "mc",
       model_role_name: str = "model",
       parallel_model_calls: bool = True,
+      vllm_port: int = 8000,
   ):
     self.model_name = model_name
     self.generation_config = {
@@ -53,12 +55,17 @@ class Evaluator:
     }
     if "gemini" in self.model_name:
       self.model_url = self.model_name
-    elif self.model_name == "gemma_2b":
-      self.model_url = "google/gemma-2-2b-it"
-    elif self.model_name == "gemma_27b":
-      self.model_url = "google/gemma-2-27b-it"
-    elif self.model_name == "gemma_9b":
-      self.model_url = "google/gemma-2-9b-it"
+    elif "gemma" in self.model_name:
+      # For Gemma models, we'll use the VLLM server URL
+      self.model_url = f"http://localhost:{vllm_port}/v1/chat/completions"
+      if self.model_name == "gemma_2_2b":
+        self.model_name = "google/gemma-2-2b-it"
+      elif self.model_name == "gemma_2_9b":
+        self.model_name = "google/gemma-2-9b-it"
+      elif self.model_name == "gemma_2_27b":
+        self.model_name = "google/gemma-2-27b-it"
+      else:
+        raise ValueError(f"Invalid model name: {self.model_name}")
     elif self.model_name in GPT_COSTS:
       self.generation_config = {
           "temperature": 0.0,
@@ -80,3 +87,4 @@ class Evaluator:
     self.eval_mode = eval_mode
     self.model_role_name = model_role_name
     self.parallel_model_calls = parallel_model_calls
+    self.vllm_port = vllm_port

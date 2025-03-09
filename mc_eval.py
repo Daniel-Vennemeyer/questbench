@@ -58,6 +58,7 @@ def main(user_args) -> None:
         batch_size=user_args.batch_size,
         model_role_name=user_args.model_role_name,
         parallel_model_calls=user_args.parallel_model_calls,
+        vllm_port=user_args.vllm_port,
     )
     prompt_file = os.path.join(
         user_args.data_dir,
@@ -75,6 +76,7 @@ def main(user_args) -> None:
         batch_size=user_args.batch_size,
         model_role_name=user_args.model_role_name,
         parallel_model_calls=user_args.parallel_model_calls,
+        vllm_port=user_args.vllm_port,
     )
     if user_args.domain_name.split("_")[1] == "csp":
       prompt_file = os.path.join(
@@ -105,6 +107,7 @@ def main(user_args) -> None:
         batch_size=user_args.batch_size,
         model_role_name=user_args.model_role_name,
         parallel_model_calls=user_args.parallel_model_calls,
+        vllm_port=user_args.vllm_port,
     )
     prompt_file = os.path.join(
         user_args.data_dir,
@@ -137,8 +140,8 @@ if __name__ == "__main__":
       type=str,
       help=(
           "The name of the model to evaluate. Currently support `gpt-4o`,"
-          " `o1-preview`, `gemini-1.5-flash`, `gemini-1.5-pro`, `gemma_2b`,"
-          " `gemma_27b`, and `gemma_9b`"
+          " `o1-preview`, `gemini-1.5-flash`, `gemini-1.5-pro`, `gemma_2_2b`,"
+          " `gemma_2_9b`, and `gemma_2_27b`"
       ),
   )
   parser.add_argument(
@@ -221,6 +224,12 @@ if __name__ == "__main__":
       action="store_false",
       dest="parallel_model_calls",
       help="Disable thread pool.",
+  )
+  parser.add_argument(
+      "--vllm_port",
+      type=int,
+      default=8000,
+      help="Port for the VLLM server. Default is 8000.",
   )
   args = parser.parse_args()
   main(args)

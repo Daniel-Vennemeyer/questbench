@@ -8,3 +8,4 @@ tenacity
 transformers
 google-generativeai
 huggingface-hub
+vllm

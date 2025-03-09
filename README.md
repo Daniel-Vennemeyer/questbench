@@ -31,10 +31,12 @@ Set your api key to be able to use Gemini models
 export GOOGLE_API_KEY=<gemini_api_key>
 ```
 
-Login to HuggingFace to be able to use Gemma models
+Login to HuggingFace to be able to use Gemma models, and start a vllm server with the desired model
 ```bash
 huggingface-cli login
+vllm serve "google/gemma-2-2b-it"
 ```
+* Substitute with `google/gemma-2-9b-it` or `google/gemma-2-27b-it` as necessary.
 
 Set your openai key to be able to use GPT models
 ```bash
@@ -46,15 +48,24 @@ export OPENAI_PROJECT=<openai_project_key>
 Next, run the eval
 ```bash
 python mc_eval.py \
---model_name [gemini-1.5-pro|gemini-1.5-flash|gpt-4o|o1-preview|gemma-27b|gemma-2b|gemma-9b] \
+--model_name <model_name> \
 --domain_name [GSM_csp|Planning|SL|GSM_verbal] \
 --eval_mode [mc|isambig|fullinfo] \
 --data_dir <data_dir> \
 --data_file <data_fp> \
 --prompt_mode [|cot|fs4] \
---results_dir <results_dir>
+--results_dir <results_dir> \
+(--vllm_port <port>)
 ```
-
+* We currently support the following `--model_name`:
+    * `gemini-1.5-pro`
+    * `gemini-1.5-flash`
+    * `gpt-4o`
+    * `o1-preview`
+    * `gemma_2_27b`
+    * `gemma_2_9b`
+    * `gemma_2_2b`
+* If a gemma-2 model is used, specify a VLLM port.
 * `--data_dir` should be set to the directory containing all the data files. By default, `--data_dir` is set to `questbench_data/`.
 * `--data_file` should be set to the appropriate file for the domain. If you downloaded the datasets from the public website, the data files should be set to
 ```bash
