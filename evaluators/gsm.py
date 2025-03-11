@@ -332,7 +332,7 @@ Possible questions:
           else:
             if self.verbal_questions:
               # get from original dataset
-              request = self.orig_dataset["test"][datum["Question ID"]]
+              request = self.orig_dataset["test"]['question'][datum["Question ID"]]
             else:
               request = datum["Full Problem"]
             response = datum["Full Answer"]
