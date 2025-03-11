@@ -26,3 +26,4 @@ MANIFEST
 # Data
 questbench_data/
 questbench_data.tar.gz
+results/
