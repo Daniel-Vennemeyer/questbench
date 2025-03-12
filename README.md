@@ -55,16 +55,23 @@ python mc_eval.py \
 --data_file <data_fp> \
 --prompt_mode [|cot|fs4] \
 --results_dir <results_dir> \
+--batch_size 1 \
+(--model_role_name assistant)
 (--vllm_port <port>)
 ```
 * We currently support the following `--model_name`:
     * `gemini-1.5-pro`
     * `gemini-1.5-flash`
+    * `gemini-2.0-flash-thinking-exp`
     * `gpt-4o`
     * `o1-preview`
+    * `claude-3-5-sonnet-20241022`
     * `gemma_2_27b`
     * `gemma_2_9b`
     * `gemma_2_2b`
+* Other Gemini models can be found [here](https://ai.google.dev/gemini-api/docs/models/gemini). Other OpenAI models can be used by adding their names to `GPT_COSTS` in model_utils.py. Other Anthropic models can be used by adding their names to `CLAUDE_MODELS` in model_utils.py.
+* If OpenAI or Anthropic models are used, add the `--model_role_name assistant` option. Otherwise do not add it.
+* Set `batch_size` to be lower than your RPS rate limit.
 * If a gemma-2 model is used, specify a VLLM port.
 * `--data_dir` should be set to the directory containing all the data files. By default, `--data_dir` is set to `questbench_data/`.
 * `--data_file` should be set to the appropriate file for the domain. If you downloaded the datasets from the public website, the data files should be set to
@@ -74,6 +81,7 @@ questbench_data/Planning-Q/planning_heldout_7500.csv
 questbench_data/GSM-Q/gsm_CSP_heldout_pilot.csv
 questbench_data/GSM-Q/gsm_verbal_heldout_pilot.csv
 ```
+
 
 ## Generate datasets
 Before running any code, be sure to run
@@ -141,4 +149,3 @@ All other materials are licensed under the Creative Commons Attribution 4.0 Inte
 Unless required by applicable law or agreed to in writing, all software and materials distributed here under the Apache 2.0 or CC-BY licenses are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the licenses for the specific language governing permissions and limitations under those licenses.
 
 This is not an official Google product.
-

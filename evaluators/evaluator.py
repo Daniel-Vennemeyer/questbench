@@ -15,7 +15,7 @@
 
 """Base class for evaluators."""
 
-from model_utils import CLAUDE_COSTS
+from model_utils import CLAUDE_MODELS
 from model_utils import GPT_COSTS
 from model_utils import load_cache_file
 from transformers import pipeline
@@ -76,7 +76,7 @@ class Evaluator:
           "presence_penalty": 0.0,
       }
       self.model_url = "https://api.openai.com/v1/chat/completions"
-    elif self.model_name in CLAUDE_COSTS:
+    elif self.model_name in CLAUDE_MODELS:
       self.generation_config = {
           "temperature": 0.0,
           "max_tokens": 512,

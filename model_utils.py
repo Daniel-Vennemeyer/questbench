@@ -70,16 +70,7 @@ GPT_COSTS = {
 }
 
 
-CLAUDE_COSTS = {
-    "claude-3-5-sonnet-20241022": {
-        "prompt_tokens": 5 / 1000000,
-        "completion_tokens": 15 / 1000000,
-    },
-    "claude-3-5-haiku-20241022": {
-        "prompt_tokens": 5 / 1000000,
-        "completion_tokens": 15 / 1000000,
-    },
-}
+CLAUDE_MODELS = ["claude-3-5-sonnet-20241022"]
 
 
 def load_cache_file(cache_file):
@@ -219,7 +210,6 @@ def model_call_wrapper(
     return []
   def get_batch_responses(get_response):
     if not parallel_model_calls or len(batch_messages) <= 1:
-      print("not parallel")
       responses = []
       for messages in batch_messages:
         responses.append(get_response(messages))
@@ -277,7 +267,7 @@ def model_call_wrapper(
         raise e
         
     return get_batch_responses(get_response)
-  elif model_name in CLAUDE_COSTS:
+  elif model_name in CLAUDE_MODELS:
     def get_response(messages):
       for message in messages:
         if message["role"] == "system":
@@ -290,61 +280,6 @@ def model_call_wrapper(
       response = claude_request(model_url, data)
       return response
     return get_batch_responses(get_response)
-
-
-@retry(
-    stop=stop_after_attempt(5),  # Retry at most 5 times
-    wait=tenacity.wait_fixed(20),  # Wait 20 seconds between retries
-)
-def model_call_wrapper_single(
-    messages: List[Dict[str, str]],
-    model_name,
-    model_url,
-    generation_config,
-) -> str:
-  """Wrapper for calling various types of models, including Gemini and OpenAI models."""
-  if model_name in GPT_COSTS:
-    data = {
-        "model": model_name,
-        "messages": messages,
-        **generation_config,
-    }
-    response = requests.post(model_url, headers=OPENAI_HEADER, json=data)
-    try:
-      response = response.json()
-    except Exception as e:
-      print(response)
-      raise e
-    return response
-  elif "gemini" in model_name.lower():
-    model = genai.GenerativeModel(model_url)
-    for message in messages:
-      if message["role"] == "system":
-        message["role"] = "user"
-      if "content" in message:
-        message["parts"] = message["content"]
-        del message["content"]
-    chat = model.start_chat(history=messages[:-1])
-    response = chat.send_message(messages[-1]).text
-    return response
-  elif "gemma" in model_name.lower():
-    final_messages = process_gemma_messages(messages)
-    
-    data = {
-        "model": model_name,
-        "messages": final_messages,
-        "temperature": 0.0,
-        "max_tokens": 512,
-    }
-    
-    response = requests.post(model_url, json=data)
-    try:
-      response_json = response.json()
-      assistant_response = response_json["choices"][0]["message"]["content"].strip()
-      return assistant_response
-    except Exception as e:
-      print(response.text)
-      raise e
 
 
 def cached_generate(
@@ -423,71 +358,9 @@ def cached_generate(
             cache[jsonified_prompt]["usage"][token_type]
             * GPT_COSTS[model_name][token_type]
         )
-    elif model_name in CLAUDE_COSTS:
+    elif model_name in CLAUDE_MODELS:
       text_output = cache[jsonified_prompt]["content"][0]["text"]
     else:
       text_output = cache[jsonified_prompt]
     batch_responses.append(text_output)
   return batch_responses, cost
-
-
-def cached_generate_single(
-    prompt,
-    model_name,
-    model_url,
-    cache,
-    generation_config,
-):
-  """Generate a single response from a model, caching responses.
-
-  Args:
-    prompt: The prompt to generate from.
-    model_name: The name of the model to generate from.
-    model_url: The URL of the model to generate from.
-    cache: cache of LLM responses.
-    generation_config: generation config for LLM
-
-  Returns:
-    The response and the new cache entries.
-
-  Raises:
-    ValueError: Invalid response from model.
-  """
-  if model_name.startswith("o1"):
-    for t, turn in enumerate(prompt):
-      if turn["role"] == "system":
-        prompt[t]["role"] = "user"
-    generation_config = {}
-
-  if cache is None:
-    return model_call_wrapper_single(
-        prompt,
-        model_name,
-        model_url,
-        generation_config=generation_config,
-    )
-  jsonified_prompt = jsonify_prompt(prompt)
-  new_cache_entries = []
-  if jsonified_prompt not in cache:
-    response = model_call_wrapper_single(
-        prompt,
-        model_name,
-        model_url,
-        generation_config=generation_config,
-    )
-    if model_name in GPT_COSTS and "choices" not in response:
-      raise ValueError(f'No "choices" in dict: {response}')
-    cache[jsonified_prompt] = response
-    new_cache_entries.append({
-        "prompt": jsonified_prompt,
-        "completion": cache[jsonified_prompt],
-    })
-  if model_name in GPT_COSTS:
-    try:
-      response = cache[jsonified_prompt]["choices"][0]["message"]["content"]
-    except Exception as e:
-      print(cache[jsonified_prompt])
-      raise e
-  else:
-    response = cache[jsonified_prompt]
-  return response, new_cache_entries

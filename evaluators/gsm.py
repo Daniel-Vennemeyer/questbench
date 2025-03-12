@@ -21,7 +21,7 @@ import re
 
 import datasets
 from evaluators.evaluator import Evaluator
-from model_utils import cached_generate_single
+from model_utils import cached_generate
 import pandas as pd
 import tqdm
 
@@ -125,23 +125,24 @@ Possible questions:
       fs_turns: The fewshot turns.
 
     Returns:
-      The correctness, LM response, LM conversation, and new cache entries.
+      The correctness, LM response, LM conversation.
     """
     conversation = []
-    new_cache_entries = []
     prompt = [
         {"role": "system", "content": self.assist_prompt},
         *fs_turns,
         {"role": "user", "content": request},
     ]
-    response, new_cache_entry = cached_generate_single(
-        prompt,
+    responses, _ = cached_generate(
+        [prompt],
         self.model_name,
         self.model_url,
         cache=self.cache,
+        cache_file=self.cache_file,
         generation_config=self.generation_config,
+        parallel_model_calls=False,
     )
-    new_cache_entries.extend(new_cache_entry)
+    response = responses[0]
     conversation.append({"role": "user", "text": request})  # user: ambig q
     conversation.append({
         "role": self.model_role_name,
@@ -161,14 +162,16 @@ Possible questions:
                 ' your choice. Output "Choice: <number>" and nothing else.'
             ),
         })
-        response, new_cache_entry = cached_generate_single(
-            prompt,
+        responses, _ = cached_generate(
+            [prompt],
             self.model_name,
             self.model_url,
             cache=self.cache,
+            cache_file=self.cache_file,
             generation_config=self.generation_config,
+            parallel_model_calls=False
         )
-        new_cache_entries.extend(new_cache_entry)
+        response = responses[0]
         conversation.append({
             "role": "system",
             "content": (
@@ -206,14 +209,16 @@ Possible questions:
             "role": "system",
             "content": prompt_content,
         })
-        response, new_cache_entry = cached_generate_single(
+        responses, _ = cached_generate(
             prompt,
             self.model_name,
             self.model_url,
             cache=self.cache,
+            cache_file=self.cache_file,
             generation_config=self.generation_config,
+            parallel_model_calls=False
         )
-        new_cache_entries.extend(new_cache_entry)
+        response = responses[0]
         conversation.append({
             "role": "system",
             "content": prompt_content,
@@ -231,7 +236,7 @@ Possible questions:
         else:
           response = numbers[0]
           correct = int(response) == gt_query
-    return correct, response, conversation, new_cache_entries
+    return correct, response, conversation
 
   def parse_auto_eval(self, eval_str):
     try:
@@ -250,23 +255,22 @@ Possible questions:
       fs_turns: The fewshot turns.
 
     Returns:
-      The batch of LM responses, LM conversations, and whether they are
-      correctness.
+      batch_query: The batch of LM responses.
+      batch_conversation: LM conversations.
+      batch_correct: whether they are correctness.
     """
     (
         batch_query,
         batch_conversation,
-        batch_correct,
-        batch_new_cache_entries,
-    ) = ([], [], [], [])
+        batch_correct
+    ) = ([], [], [])
     for _, (request, gt_query) in enumerate(zip(batch_request, batch_gt_query)):
-      (correct, query, conversation, new_cache_entries) = self.generate_query(
+      (correct, query, conversation) = self.generate_query(
           request, gt_query, fs_turns
       )
       batch_query.append(query)
       batch_conversation.append(conversation)
       batch_correct.append(correct)
-      batch_new_cache_entries.append(new_cache_entries)
     return batch_query, batch_conversation, batch_correct
 
   def make_convo_batches(self, data, batch_size=None):
@@ -403,15 +407,6 @@ Possible questions:
                 "content": f"Choice: {q_to_ask_index}",
             },
         ])
-        # breakpoint()
-        # if self.verbal_questions:
-        #   fewshot_turns[-1].append()
-        # else:
-        #   fewshot_turns[-1].append({
-        #       "role": self.model_role_name,
-        #       "content":
-        #       # "content": f'Question: What is the value of {q_to_ask}?',
-        #   })
       else:
         is_trues = [True]
         if self.eval_mode == "isambig":
@@ -499,7 +494,6 @@ Possible questions:
         batch_gt_answer,
         batch_gt_query,
     ) in pbar:
-      batch_numerical_answer = []
       batch_query, batch_conversation, batch_correct = (
           self.generate_query_batch(
               batch_request,
@@ -510,16 +504,9 @@ Possible questions:
 
       for i, item_id in enumerate(batch_id):
         datum = data.iloc[item_id]
-        if batch_numerical_answer:
-          pred_answer = batch_numerical_answer[i]
-        else:
-          pred_answer = None
+        pred_answer = None
         equations = json.loads(datum["Equations"])
         variables = json.loads(datum["Variables"])
-        if batch_query:
-          pred_qs = batch_query[i]
-        else:
-          pred_qs = None
 
         results.loc[len(results)] = [
             batch_correct[i],
@@ -531,7 +518,7 @@ Possible questions:
             datum["CSP"],
             len(equations),
             len(variables),
-            pred_qs,
+            batch_query[i],
             batch_gt_query[i],
             variables,
             json.dumps(batch_conversation[i]),
