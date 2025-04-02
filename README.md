@@ -131,7 +131,7 @@ Please see the technical report for more details.
 ```
 @techreport{li2025,
   title={QuestBench: Can LLMs ask the right question to acquire information in reasoning tasks?},
-  author={Belinda Li and Been Kim and Zi Wang},
+  author={Belinda Z. Li and Been Kim and Zi Wang},
   year={2025},
   institution={Google DeepMind}
 }
