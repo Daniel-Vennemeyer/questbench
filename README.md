@@ -133,11 +133,14 @@ Please see the technical report for more details.
 
 ## Citing this work
 ```
-@techreport{li2025,
-  title={QuestBench: Can LLMs ask the right question to acquire information in reasoning tasks?},
-  author={Belinda Z. Li and Been Kim and Zi Wang},
-  year={2025},
-  institution={Google DeepMind}
+@misc{li2025questbenchllmsaskright,
+      title={QuestBench: Can LLMs ask the right question to acquire information in reasoning tasks?}, 
+      author={Belinda Z. Li and Been Kim and Zi Wang},
+      year={2025},
+      eprint={2503.22674},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2503.22674}, 
 }
 ```
 
