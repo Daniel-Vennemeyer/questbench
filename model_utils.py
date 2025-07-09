@@ -31,7 +31,7 @@ pipeline = transformers.pipeline
 # Initialize local Llama 70B pipeline
 llama_pipeline = pipeline(
     "text-generation",
-    model="llama-70b",
+    model="meta-llama/Llama-3.3-70B-Instruct",
     device_map="auto",
     torch_dtype=torch.float16,
 )
