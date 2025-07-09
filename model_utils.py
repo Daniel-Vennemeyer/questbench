@@ -23,6 +23,10 @@ from typing import Dict, List
 import torch
 import transformers
 
+# Model lists and cost dictionaries
+CLAUDE_MODELS = []
+GPT_COSTS = {}
+
 
 ThreadPoolExecutor = futures.ThreadPoolExecutor
 pipeline = transformers.pipeline
