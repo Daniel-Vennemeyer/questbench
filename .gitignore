@@ -24,6 +24,6 @@ share/python-wheels/
 MANIFEST
 
 # Data and results
-questbench_data/
+# questbench_data/
 questbench_data.tar.gz
-results/
+# results/
