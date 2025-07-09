@@ -135,6 +135,10 @@ def cached_generate(
   for prompt, response in zip(new_batch_prompts, batch_responses):
     jsonified_prompt = jsonify_prompt(prompt)
     cache[jsonified_prompt] = response
+  # Ensure the directory for cache_file exists before writing
+  os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+  for prompt in new_batch_prompts:
+    jsonified_prompt = jsonify_prompt(prompt)
     with open(cache_file, "a") as f:
       f.write(
           json.dumps({
