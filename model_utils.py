@@ -69,10 +69,13 @@ def model_call_wrapper(
     for messages in batch_messages:
         # Concatenate message contents as prompt
         prompt = "".join(message["content"] for message in messages)
+        temp = generation_config.get("temperature", 0.0)
+        sample = True if temp > 0.0 else False
         output = llama_pipeline(
             prompt,
             max_new_tokens=generation_config.get("max_tokens", 512),
-            temperature=generation_config.get("temperature", 0.0),
+            temperature=temp,
+            do_sample=sample,
         )
         # Extract generated text
         responses.append(output[0]["generated_text"])
