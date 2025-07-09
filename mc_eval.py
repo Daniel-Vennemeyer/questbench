@@ -35,6 +35,9 @@ def main(user_args) -> None:
   elif user_args.prompt_mode.startswith("fs"):
     fs_samples = int(user_args.prompt_mode[2:])
 
+  # Sanitize model name for filesystem (replace '/' with '_')
+  safe_model_name = user_args.model_name.replace('/', '_')
+
   # Make directories for results and cache
   if not os.path.exists(user_args.results_dir):
     os.makedirs(user_args.results_dir)
@@ -44,7 +47,7 @@ def main(user_args) -> None:
   data_file_base_name = os.path.splitext(os.path.basename(user_args.data_file))[
       0
   ]
-  output_file_name = f"{user_args.model_name}-{user_args.domain_name}-{user_args.eval_mode}-{user_args.prompt_mode}-{data_file_base_name}"
+  output_file_name = f"{safe_model_name}-{user_args.domain_name}-{user_args.eval_mode}-{user_args.prompt_mode}-{data_file_base_name}"
   cache_file = os.path.join(cache_dir, f"{output_file_name}.jsonl")
   output_file = os.path.join(user_args.results_dir, f"{output_file_name}.csv")
   print("Loading Evaluator")
